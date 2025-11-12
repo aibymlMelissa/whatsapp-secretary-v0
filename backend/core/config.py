@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     @property
     def DATABASE_URL(self) -> str:
-        return f"sqlite+aiosqlite:///{self.DATABASE_PATH}"
+        return f"sqlite:///{self.DATABASE_PATH}"
     
     # WhatsApp
     WHATSAPP_SESSION_PATH: str = "data/whatsapp-session"
@@ -45,9 +45,11 @@ class Settings(BaseSettings):
     BUSINESS_HOURS_END: str = "17:00"
     DEFAULT_APPOINTMENT_DURATION: int = 60  # minutes
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+        "extra": "ignore"
+    }
 
 settings = Settings()
 

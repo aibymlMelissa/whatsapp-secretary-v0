@@ -65,7 +65,16 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3004", "http://127.0.0.1:3004", "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3004",
+        "http://127.0.0.1:3004",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8004",
+        "http://127.0.0.1:8004",
+        "https://curious-ferret-tight.ngrok-free.app",
+        "http://curious-ferret-tight.ngrok-free.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,7 +84,7 @@ app.add_middleware(
 app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["whatsapp"])
 app.include_router(appointments.router, prefix="/api", tags=["appointments"])
 app.include_router(llm.router, prefix="/api", tags=["llm"])
-app.include_router(files.router, prefix="/api", tags=["files"])
+app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(settings_router.router, tags=["settings"])
 
 # Static files

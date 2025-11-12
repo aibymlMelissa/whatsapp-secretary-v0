@@ -3,6 +3,9 @@ export interface Chat {
   name: string;
   phone_number?: string;
   is_group: boolean;
+  ai_enabled: boolean;
+  is_whitelisted: boolean;
+  unread_count?: number;
   last_message?: {
     body: string;
     timestamp: string;

@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Users } from 'lucide-react';
+import { MessageCircle, Users, Shield } from 'lucide-react';
 
 export const ChatList: React.FC = () => {
   const { chats, currentChat, fetchChats, setCurrentChat, loading } = useWhatsAppStore();
@@ -70,7 +70,6 @@ export const ChatList: React.FC = () => {
             `}
           >
             <Avatar className="h-10 w-10 mr-3">
-              <AvatarImage src={`/api/avatar/${chat.id}`} />
               <AvatarFallback className="bg-primary/10">
                 {getChatInitials(chat)}
               </AvatarFallback>
@@ -82,6 +81,14 @@ export const ChatList: React.FC = () => {
                   <h3 className="font-medium truncate">{chat.name}</h3>
                   {chat.is_group && (
                     <Users className="h-3 w-3 text-muted-foreground" />
+                  )}
+                  {chat.is_whitelisted && (
+                    <Shield className="h-3 w-3 text-green-500" />
+                  )}
+                  {chat.unread_count && chat.unread_count > 0 && (
+                    <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center text-xs px-1.5">
+                      {chat.unread_count}
+                    </Badge>
                   )}
                 </div>
                 {chat.last_message && (

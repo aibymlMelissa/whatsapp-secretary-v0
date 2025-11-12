@@ -1,11 +1,31 @@
 import axios from 'axios';
 import { Chat, Message, Appointment, WhatsAppStatus, LLMStatus } from '@/types';
 
-const API_BASE_URL = '/api';
+// Dynamically determine API base URL
+const getApiBaseUrl = () => {
+  // Check if we have a custom backend URL from environment
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return `${import.meta.env.VITE_BACKEND_URL}/api`;
+  }
+
+  // If we're running on ngrok-free.app, use the same host for API calls
+  if (typeof window !== 'undefined' && window.location.hostname.includes('ngrok-free.app')) {
+    // Extract the ngrok URL and point to backend port
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    // For ngrok, we need to use the backend URL (assuming it's on the same ngrok instance)
+    return `${protocol}//${hostname}/api`;
+  }
+
+  // Default to relative path (works with Vite proxy)
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased timeout for ngrok
 });
 
 api.interceptors.response.use(
@@ -28,6 +48,11 @@ export const whatsappApi = {
     api.get('/whatsapp/chats'),
   getChatMessages: (chatId: string, limit = 50): Promise<{ data: { success: boolean; messages: Message[] } }> =>
     api.get(`/whatsapp/chats/${chatId}/messages?limit=${limit}`),
+  toggleAI: (chatId: string, enabled: boolean) =>
+    api.post(`/whatsapp/chats/${chatId}/toggle-ai?enabled=${enabled}`),
+  toggleWhitelist: (chatId: string, whitelisted: boolean) =>
+    api.post(`/whatsapp/chats/${chatId}/toggle-whitelist?whitelisted=${whitelisted}`),
+  getStats: () => api.get('/whatsapp/stats'),
 };
 
 export const appointmentsApi = {
@@ -57,9 +82,22 @@ export const llmApi = {
 };
 
 export const filesApi = {
-  getDownloads: () => api.get('/files/downloads'),
-  deleteFile: (filename: string) => api.delete(`/files/downloads/${filename}`),
-  getStorageStats: () => api.get('/files/stats'),
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  list: () => api.get('/files/list'),
+  download: (fileId: number) => {
+    return api.get(`/files/download/${fileId}`, {
+      responseType: 'blob',
+    });
+  },
+  delete: (fileId: number) => api.delete(`/files/delete/${fileId}`),
 };
 
 export default api;

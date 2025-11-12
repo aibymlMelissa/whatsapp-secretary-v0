@@ -31,15 +31,17 @@ class LLMProvider(enum.Enum):
 # Chat Management
 class Chat(Base):
     __tablename__ = "chats"
-    
+
     id = Column(String, primary_key=True)  # WhatsApp chat ID
     name = Column(String, nullable=False)
     phone_number = Column(String)
     is_group = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    ai_enabled = Column(Boolean, default=False)  # Enable AI auto-response for this chat
+    is_whitelisted = Column(Boolean, default=False)  # Only whitelisted chats can receive AI responses
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
+
     # Relationships
     messages = relationship("Message", back_populates="chat")
     appointments = relationship("Appointment", back_populates="chat")
@@ -262,7 +264,7 @@ class BusinessHours(Base):
 
 class ServiceType(Base):
     __tablename__ = "service_types"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
     description = Column(Text)
@@ -270,49 +272,42 @@ class ServiceType(Base):
     price = Column(Float)
     currency = Column(String, default="USD")
     is_active = Column(Boolean, default=True)
-    
+
     # Booking rules
     advance_booking_hours = Column(Integer, default=24)  # Minimum advance booking
     max_advance_booking_days = Column(Integer, default=30)  # Maximum advance booking
-    
+
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+# Security: Authorization System
+class PendingAuthorization(Base):
+    __tablename__ = "pending_authorizations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    request_id = Column(String, unique=True, nullable=False)  # Unique request identifier
+    chat_id = Column(String, ForeignKey("chats.id"), nullable=False)  # Who requested
+    requester_phone = Column(String, nullable=False)
+
+    # What is being requested
+    action_type = Column(String, nullable=False)  # 'database_query', 'file_access', 'appointment_access', etc.
+    action_description = Column(Text)  # Human-readable description
+    requested_data = Column(Text)  # JSON string of what data is requested
+
+    # Authorization status
+    status = Column(String, default="pending")  # pending, approved, denied, expired
+    auth_code = Column(String)  # The code BOSS needs to send (e.g., "AIbyML.com")
+
+    # Approval tracking
+    approved_by = Column(String)  # Phone number of approver
+    approved_at = Column(DateTime)
+    expires_at = Column(DateTime)  # Auto-expire after X minutes
+
+    # Response handling
+    response_data = Column(Text)  # Cached response to send after approval
+    response_sent = Column(Boolean, default=False)
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
-# backend/app/database/database.py
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-import os
-from core.config import settings
-# Base is already defined in this file
-
-# SQLite database URL
-DATABASE_URL = f"sqlite:///{settings.DATABASE_PATH}"
-
-# Create engine
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=StaticPool,
-    connect_args={
-        "check_same_thread": False,
-        "timeout": 20
-    },
-    echo=settings.DEBUG  # Log SQL queries in debug mode
-)
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-async def init_db():
-    """Initialize database tables"""
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created")
-
-def get_db():
-    """Dependency to get database session"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

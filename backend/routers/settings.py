@@ -5,10 +5,22 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from database.database import get_db
-from database.models import User, UserLLMSetting, LLMProvider
+from database.models import User, UserLLMSetting, LLMProvider, SystemConfig
 from core.security import encrypt_api_key, decrypt_api_key
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
+
+# Security Settings Models
+class SecuritySettingsRequest(BaseModel):
+    boss_phone_number: Optional[str] = None
+    auth_code_phrase: Optional[str] = None
+    auth_timeout_minutes: Optional[int] = None
+
+class SecuritySettingsResponse(BaseModel):
+    boss_phone_number: Optional[str] = None
+    auth_code_phrase: str
+    auth_timeout_minutes: int
+    has_boss_configured: bool
 
 # Pydantic models for API
 class LLMSettingsRequest(BaseModel):
@@ -334,4 +346,92 @@ async def remove_api_key(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to remove API key: {str(e)}"
+        )
+
+# Security Settings Endpoints
+
+@router.get("/security", response_model=SecuritySettingsResponse)
+async def get_security_settings(db: Session = Depends(get_db)):
+    """Get security settings (BOSS phone number, auth code, etc.)"""
+    try:
+        boss_phone = db.query(SystemConfig).filter(SystemConfig.key == "BOSS_PHONE_NUMBER").first()
+        auth_code = db.query(SystemConfig).filter(SystemConfig.key == "AUTH_CODE_PHRASE").first()
+        auth_timeout = db.query(SystemConfig).filter(SystemConfig.key == "AUTH_TIMEOUT_MINUTES").first()
+
+        return SecuritySettingsResponse(
+            boss_phone_number=boss_phone.value if boss_phone else None,
+            auth_code_phrase=auth_code.value if auth_code else "AIbyML.com",
+            auth_timeout_minutes=int(auth_timeout.value) if auth_timeout else 5,
+            has_boss_configured=bool(boss_phone and boss_phone.value)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get security settings: {str(e)}"
+        )
+
+@router.post("/security", response_model=SecuritySettingsResponse)
+async def update_security_settings(
+    request: SecuritySettingsRequest,
+    db: Session = Depends(get_db)
+):
+    """Update security settings"""
+    try:
+        # Update BOSS phone number
+        if request.boss_phone_number is not None:
+            boss_phone = db.query(SystemConfig).filter(SystemConfig.key == "BOSS_PHONE_NUMBER").first()
+            if boss_phone:
+                boss_phone.value = request.boss_phone_number
+            else:
+                boss_phone = SystemConfig(
+                    key="BOSS_PHONE_NUMBER",
+                    value=request.boss_phone_number,
+                    description="Phone number of the BOSS who authorizes sensitive operations"
+                )
+                db.add(boss_phone)
+
+        # Update auth code phrase
+        if request.auth_code_phrase is not None:
+            auth_code = db.query(SystemConfig).filter(SystemConfig.key == "AUTH_CODE_PHRASE").first()
+            if auth_code:
+                auth_code.value = request.auth_code_phrase
+            else:
+                auth_code = SystemConfig(
+                    key="AUTH_CODE_PHRASE",
+                    value=request.auth_code_phrase,
+                    description="Secret phrase BOSS must send to authorize requests"
+                )
+                db.add(auth_code)
+
+        # Update auth timeout
+        if request.auth_timeout_minutes is not None:
+            auth_timeout = db.query(SystemConfig).filter(SystemConfig.key == "AUTH_TIMEOUT_MINUTES").first()
+            if auth_timeout:
+                auth_timeout.value = str(request.auth_timeout_minutes)
+            else:
+                auth_timeout = SystemConfig(
+                    key="AUTH_TIMEOUT_MINUTES",
+                    value=str(request.auth_timeout_minutes),
+                    description="Minutes before authorization request expires"
+                )
+                db.add(auth_timeout)
+
+        db.commit()
+
+        # Fetch and return updated settings
+        boss_phone = db.query(SystemConfig).filter(SystemConfig.key == "BOSS_PHONE_NUMBER").first()
+        auth_code = db.query(SystemConfig).filter(SystemConfig.key == "AUTH_CODE_PHRASE").first()
+        auth_timeout = db.query(SystemConfig).filter(SystemConfig.key == "AUTH_TIMEOUT_MINUTES").first()
+
+        return SecuritySettingsResponse(
+            boss_phone_number=boss_phone.value if boss_phone else None,
+            auth_code_phrase=auth_code.value if auth_code else "AIbyML.com",
+            auth_timeout_minutes=int(auth_timeout.value) if auth_timeout else 5,
+            has_boss_configured=bool(boss_phone and boss_phone.value)
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update security settings: {str(e)}"
         )

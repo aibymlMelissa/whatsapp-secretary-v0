@@ -83,6 +83,7 @@ export const useWhatsAppStore = create<WhatsAppStore>((set, get) => ({
     }
   },
 
+
   fetchChats: async () => {
     try {
       set({ loading: true, error: null });
@@ -153,19 +154,39 @@ export const useWhatsAppStore = create<WhatsAppStore>((set, get) => ({
 }));
 
 // Initialize WebSocket listeners
-websocketService.on('whatsapp_status', (data) => {
+websocketService.on('whatsapp_status', (data: any) => {
   useWhatsAppStore.getState().updateStatus(data);
 });
 
-websocketService.on('qr_code', (data) => {
+websocketService.on('qr_code', (data: any) => {
   useWhatsAppStore.getState().setQrCode(data.qr);
 });
 
-websocketService.on('new_message', (data) => {
-  useWhatsAppStore.getState().addMessage(data);
+websocketService.on('new_message', (message: any) => {
+  console.log('New message received:', message);
+  const messageData = message.data || message;
+
+  // Add message to store if we have the chat open
+  if (messageData.chatId) {
+    useWhatsAppStore.getState().addMessage({
+      id: messageData.messageId || messageData.id,
+      chat_id: messageData.chatId,
+      body: messageData.body,
+      message_type: 'text',
+      from_me: messageData.fromMe || false,
+      timestamp: messageData.timestamp,
+      has_media: messageData.hasMedia || false,
+      llm_processed: false,
+    });
+  }
+
+  // Refresh chat list to update last message and timestamps
+  useWhatsAppStore.getState().fetchChats();
 });
 
-websocketService.on('message_sent', (data) => {
+websocketService.on('message_sent', (data: any) => {
   // Handle sent message confirmation
   console.log('Message sent:', data);
 });
+
+// Pairing code functionality removed

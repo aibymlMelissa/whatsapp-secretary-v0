@@ -1,0 +1,54 @@
+{
+  "name": "whatsapp-secretary",
+  "version": "2.0.0",
+  "description": "AI-powered WhatsApp assistant with appointment booking and intelligent conversation management",
+  "scripts": {
+    "start": "./start.sh dev",
+    "start:dev": "./start-dev.sh",
+    "start:docker": "./start-docker.sh",
+    "start:backend": "./start-backend-only.sh",
+    "stop": "docker-compose down",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "install:frontend": "cd frontend && npm install",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && source venv/bin/activate && pytest",
+    "test:frontend": "cd frontend && npm test",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && source venv/bin/activate && flake8 .",
+    "lint:frontend": "cd frontend && npm run lint",
+    "logs": "docker-compose logs -f",
+    "logs:backend": "docker-compose logs -f backend",
+    "logs:frontend": "docker-compose logs -f frontend",
+    "clean": "npm run clean:backend && npm run clean:frontend",
+    "clean:backend": "cd backend && rm -rf venv __pycache__ *.pyc",
+    "clean:frontend": "cd frontend && rm -rf node_modules dist .next",
+    "setup": "npm run install:all && cp .env.example .env || true"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/whatsapp-secretary.git"
+  },
+  "keywords": [
+    "whatsapp",
+    "ai",
+    "assistant",
+    "chatbot",
+    "appointment-booking",
+    "fastapi",
+    "react",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/whatsapp-secretary/issues"
+  },
+  "homepage": "https://github.com/your-username/whatsapp-secretary#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.11.0"
+  }
+}

@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWhatsAppStore } from '@/store/whatsapp';
 import { websocketService } from '@/services/websocket';
-import { QRCodeDisplay } from './QRCodeDisplay';
-import { QRCodeModal } from './QRCodeModal';
-import { Wifi, WifiOff, Loader2, Maximize } from 'lucide-react';
+import { AuthenticationModal } from './AuthenticationModal';
+import { Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
 
 export const ConnectionStatus: React.FC = () => {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const {
     status,
     qrCode,
@@ -38,7 +40,42 @@ export const ConnectionStatus: React.FC = () => {
 
   const handleConnect = async () => {
     await connect();
+    setAuthModalOpen(true);
+
+    // Clear any existing polling
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
+    // Poll for status updates to detect when connected
+    pollIntervalRef.current = setInterval(async () => {
+      await fetchStatus();
+      if (status?.connected) {
+        setAuthModalOpen(false);
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      }
+    }, 2000); // Poll every 2 seconds
+
+    // Clear interval after 2 minutes to prevent infinite polling
+    setTimeout(() => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    }, 120000);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleDisconnect = async () => {
     await disconnect();
@@ -106,24 +143,14 @@ export const ConnectionStatus: React.FC = () => {
         </div>
       )}
 
-      {status?.connecting && qrCode && (
-        <div className="mt-4 space-y-3">
-          <QRCodeDisplay
-            qrData={qrCode}
-            onRefresh={fetchQrCode}
+      {(status?.connecting || authModalOpen) && (
+        <div className="mt-4">
+          <AuthenticationModal
+            isOpen={authModalOpen || (Boolean(status?.connecting) && !Boolean(status?.connected))}
+            onOpenChange={setAuthModalOpen}
+            qrData={qrCode || undefined}
+            onRefreshQR={fetchQrCode}
           />
-          <div className="flex justify-center">
-            <QRCodeModal
-              qrData={qrCode}
-              onRefresh={fetchQrCode}
-              trigger={
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Maximize className="h-4 w-4" />
-                  View Larger QR Code
-                </Button>
-              }
-            />
-          </div>
         </div>
       )}
 

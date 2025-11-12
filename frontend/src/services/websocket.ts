@@ -4,12 +4,27 @@ class WebSocketService {
   private ws: WebSocket | null = null;
   private listeners: Map<string, Function[]> = new Map();
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 10; // Increased from 5
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
-  connect(url: string = `ws://${window.location.host}/ws`) {
+  connect(url?: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return;
+    }
+
+    // Dynamically determine WebSocket URL if not provided
+    if (!url) {
+      if (import.meta.env.VITE_WS_URL) {
+        url = `${import.meta.env.VITE_WS_URL}/ws`;
+      } else if (window.location.hostname.includes('ngrok-free.app')) {
+        // Use wss for ngrok https URLs
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        url = `${protocol}//${window.location.host}/ws`;
+      } else {
+        // Default for local development
+        url = `ws://${window.location.host}/ws`;
+      }
     }
 
     try {
@@ -22,6 +37,7 @@ class WebSocketService {
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
         }
+        this.startHeartbeat();
         this.emit('connection', { connected: true });
       };
 
@@ -81,12 +97,30 @@ class WebSocketService {
       this.reconnectTimer = null;
     }
 
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
       this.ws = null;
     }
     this.listeners.clear();
     this.reconnectAttempts = 0;
+  }
+
+  private startHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    // Send ping every 30 seconds to keep connection alive
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.send('ping');
+      }
+    }, 30000);
   }
 
   send(type: string, data?: any) {

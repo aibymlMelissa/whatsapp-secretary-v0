@@ -11,15 +11,19 @@ export default defineConfig({
   },
   server: {
     port: 3004,
+    host: '0.0.0.0',
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8001',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
         changeOrigin: true,
+        secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:8001',
+        target: process.env.VITE_WS_URL || 'ws://localhost:8001',
         ws: true,
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

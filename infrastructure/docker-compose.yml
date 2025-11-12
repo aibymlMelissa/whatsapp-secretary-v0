@@ -1,0 +1,259 @@
+I'll help generate the infrastructure code for each component. Let's break this down into sections:
+
+1. First, let's create the Dockerfiles:
+
+`backend/Dockerfile`:
+```dockerfile
+# Multi-stage build
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY package*.json ./
+RUN npm ci --only=production
+EXPOSE 3000
+CMD ["node", "dist/main.js"]
+```
+
+`frontend/Dockerfile`:
+```dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+```
+
+`docker-compose.yml`:
+```yaml
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: secretary_ai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  postgres_data:
+```
+
+2. Kubernetes Manifests:
+
+`k8s/backend-deployment.yaml`:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: secretary-ai/backend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db_host
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+```
+
+`k8s/ingress.yaml`:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: secretary-ai-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: api.secretary-ai.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 80
+```
+
+3. GitHub Actions CI/CD:
+
+`.github/workflows/ci-cd.yml`:
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      run: npm ci
+    - name: Run tests
+      run: npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build Docker images
+      run: |
+        docker build -t secretary-ai/backend:${{ github.sha }} ./backend
+        docker build -t secretary-ai/frontend:${{ github.sha }} ./frontend
+    
+    - name: Push to Registry
+      run: |
+        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        docker push secretary-ai/backend:${{ github.sha }}
+        docker push secretary-ai/frontend:${{ github.sha }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Deploy to Kubernetes
+      uses: steebchen/kubectl@v2
+      with:
+        config: ${{ secrets.KUBE_CONFIG_DATA }}
+        command: |
+          kubectl apply -f k8s/
+```
+
+4. Monitoring Setup:
+
+`monitoring/prometheus.yml`:
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'secretary-ai'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+```
+
+`monitoring/grafana-dashboard.json`:
+```json
+{
+  "dashboard": {
+    "title": "Secretary AI Dashboard",
+    "panels": [
+      {
+        "title": "API Response Time",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "http_request_duration_seconds"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5.*\"}[5m])"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+This infrastructure code provides:
+- Containerized applications with multi-stage builds
+- Kubernetes deployments with proper health checks
+- Automated CI/CD pipeline
+- Basic monitoring setup
+
+Additional considerations:
+1. Add resource limits in Kubernetes manifests
+2. Implement network policies
+3. Set up backup procedures
+4. Configure horizontal pod autoscaling
+5. Implement secret management
+6. Set up SSL/TLS certificates
+
+Would you like me to elaborate on any of these components or add additional configurations?

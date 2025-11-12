@@ -1,9 +1,17 @@
 {
   "name": "whatsapp-secretary-node",
   "version": "1.0.0",
+  "main": "whatsapp_client.js",
   "dependencies": {
-    "whatsapp-web.js": "^1.23.0",
+    "whatsapp-web.js": "^1.22.2",
     "qrcode-terminal": "^0.12.0",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "socket.io": "^4.7.2",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.0",
+    "typescript": "^5.1.6",
+    "ts-node": "^10.9.1"
   }
 }

@@ -1,0 +1,37 @@
+{
+  "project_name": "make_a_professional_back-end_with_fastapi_and_op",
+  "safe_name": "make_a_professional_back-end_with_fastapi_and_op",
+  "architecture": "fullstack_web_app",
+  "components": [
+    "frontend",
+    "backend",
+    "database",
+    "documentation"
+  ],
+  "created_at": "2025-09-15T23:23:56.370906",
+  "structure": {
+    "docs": {
+      "architecture": {},
+      "api": {},
+      "deployment": {},
+      "user_guides": {}
+    },
+    "src": {},
+    "tests": {},
+    "config": {},
+    "scripts": {},
+    "assets": {
+      "images": {},
+      "icons": {},
+      "fonts": {}
+    }
+  },
+  "metadata": {
+    "workflow_id": "87cae4af",
+    "generated_by": "ai_factory_workflow",
+    "generation_date": "2025-09-15T23:23:56.366341",
+    "description": "Make a professional \n\nback-end with FASTAPI and OPENAI got-4o   \n\nand \n\na \"frontend with NEXTJS\". \n\n\u2028\u2028The application as the intelligent core for a Secretary AI application, designed to assist users with document interaction, collaborative discussions, email construction and communication with WhatsApp and Email Server.\n\n1. Document Intelligence Module:\n* Input: User queries and a collection of documents (e.g., reports, manuals).\n* Process:\n* Load and parse various document formats.\n* Divide documents into manageable segments.\n* Transform these segments into a searchable numerical representation.\n* Store these representations in a high-performance index for rapid retrieval.\n* Upon receiving a user query, identify the most relevant document segments.\n* Synthesize a concise, accurate answer from the retrieved information.\n* Output: Direct answers to document-based questions, and a historical log of interactions.\n\n2. Collaborative Agent Module:\n* Input: A discussion topic or task from the user.\n* Process:\n* Orchestrate multiple specialized AI entities, each with a defined role (e.g., team leader, planner, interviewer).\n* Facilitate dynamic communication among these entities, allowing them to exchange information and refine solutions.\n* Implement rules for turn-taking and topic progression within the discussion.\n* Allow explicit suggestions for the next contributing entity and a clear mechanism for concluding the discussion.\n* Output: A transcript of the multi-agent discussion, culminating in a synthesized outcome or plan.\n\n3. Communication Generation Module:\n* Input: User-specified topic, sender/recipient details, and desired communication style (e.g., formal, appreciative).\n* Process:\n* Generate natural language text (e.g., emails) adhering to the specified parameters.\n* Optionally, integrate with an external messaging system for direct dispatch.\n* Output: A composed message, ready for review or sending.\n\nGeneral Requirements:\nRobust error handling.\nSecure handling of sensitive information (e.g., credentials).\nScalability to handle varying loads.",
+    "total_cost": 0.1162,
+    "total_duration": 185.12131142616272
+  }
+}

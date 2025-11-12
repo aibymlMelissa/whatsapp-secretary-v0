@@ -1,28 +1,23 @@
 # app/database/database.py
-import asyncio
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.pool import StaticPool
 
 from core.config import settings
 
-# Create sync database engine for compatibility
+# Create SQLite database engine
 engine = create_engine(
-    settings.DATABASE_URL.replace('asyncpg://', 'postgresql://'),
-    echo=True,  # Set to False in production
-)
-
-# Create async database engine
-async_engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True,  # Set to False in production
+    poolclass=StaticPool,
+    connect_args={
+        "check_same_thread": False,
+        "timeout": 20
+    },
+    echo=settings.DEBUG  # Log SQL queries in debug mode
 )
 
-# Create async session maker
-AsyncSessionLocal = sessionmaker(
-    async_engine, class_=AsyncSession, expire_on_commit=False
-)
+# Create session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Import Base from separate file to avoid circular imports
 from database.base import Base
@@ -32,19 +27,13 @@ __all__ = ['Base', 'get_db', 'init_db']
 
 async def init_db():
     """Initialize database tables"""
-    async with async_engine.begin() as conn:
-        # Import all models to ensure they are registered with Base
-        from database import models
-
-        # Create all tables
-        await conn.run_sync(Base.metadata.create_all)
-    
+    Base.metadata.create_all(bind=engine)
     print("✅ Database tables created successfully")
 
-async def get_db():
+def get_db():
     """Dependency to get database session"""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
