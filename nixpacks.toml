@@ -1,8 +1,14 @@
 [phases.setup]
-nixPkgs = ["python39", "nodejs-18_x"]
+nixPkgs = ["python310", "nodejs-18_x", "chromium"]
 
 [phases.install]
-cmds = ["pip install -r backend/requirements.txt", "cd backend/whatsapp_client && npm install"]
+cmds = [
+  "cd backend && python3 -m pip install -r requirements.txt",
+  "cd backend/whatsapp_client && npm install"
+]
+
+[phases.build]
+cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = "cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && python3 app.py"
