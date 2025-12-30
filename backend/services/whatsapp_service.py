@@ -79,7 +79,8 @@ class WhatsAppService:
             # Start Node.js bridge process with environment variables
             # Use the same port as the API server for callbacks
             api_port = os.getenv('PORT', os.getenv('API_PORT', '8001'))
-            callback_url = f"http://localhost:{api_port}/api/whatsapp/callback"
+            # Use 127.0.0.1 instead of localhost to avoid IPv6 resolution issues
+            callback_url = f"http://127.0.0.1:{api_port}/api/whatsapp/callback"
 
             # Pass environment variables to the Node.js process
             env = os.environ.copy()
