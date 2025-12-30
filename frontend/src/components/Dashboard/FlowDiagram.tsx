@@ -253,6 +253,8 @@ export const FlowDiagram: React.FC = () => {
             y={midY}
             fontSize="1.8"
             fill="#6b7280"
+            fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+            fontWeight="500"
             className="dark:fill-gray-400"
             textAnchor="middle"
           >
