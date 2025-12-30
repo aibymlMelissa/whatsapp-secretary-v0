@@ -199,6 +199,10 @@ async def get_chats(
         return {"success": True, "chats": chats}
 
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error in get_chats: {str(e)}")
+        print(error_details)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/chats/{chat_id}/toggle-ai")
@@ -331,6 +335,10 @@ async def get_stats(db: Session = Depends(get_db)):
             }
         }
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error in get_stats: {str(e)}")
+        print(error_details)
         raise HTTPException(status_code=500, detail=str(e))
 
 
