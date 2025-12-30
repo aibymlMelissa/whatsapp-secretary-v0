@@ -241,14 +241,14 @@ The backend implements a sophisticated **agentic task system** where specialized
 ### 1. Password-Based Authorization System
 
 **Configuration:**
-- Authorized Phone Number: `+852 90511427` (AIbyML.com HK)
-- Required Password: `AI((99mlMeta` (configurable in `.env`)
+- Authorized Phone Number: `+852 XXXXXXXX` (Boss Name)
+- Required Password: `XXXXXXXXXXX` (configurable in `.env`)
 
 **How It Works:**
 ```python
 # In message: "AI((99mlMeta - What appointments do we have today?"
-# ✓ Phone number matches: +852 90511427
-# ✓ Password found in message: AI((99mlMeta
+# ✓ Phone number matches: +852 XXXXXXXX
+# ✓ Password found in message: XXXXXXXXXXXX
 # → FULL ACCESS GRANTED
 
 # Without password or wrong phone:
@@ -458,13 +458,13 @@ The authorization system uses **both** phone number and password verification:
    Response: "Sorry, Mr Hung is not available..."
 
 ❌ UNAUTHORIZED (authorized phone, no password):
-   From: +85290511427
+   From: +852XXXXXXXX
    Message: "What appointments do we have?"
    Response: "Sorry, Mr Hung is not available..."
 
 ✅ AUTHORIZED (phone + password):
-   From: +85290511427
-   Message: "AI((99mlMeta - What appointments do we have today?"
+   From: +852YYYYYYYY
+   Message: "XXXXXXXXXXXX - What appointments do we have today?"
    Response: [Full detailed response with appointment information]
 ```
 
@@ -491,22 +491,22 @@ The authorization system uses **both** phone number and password verification:
 
 **Test 1: Unauthorized Phone Number**
 ```
-Send from: Any phone except +85290511427
+Send from: Any phone except 'Boss Number'
 Message: "What's your schedule for tomorrow?"
 Expected: "Sorry, Mr Hung is not available at this moment..."
 ```
 
 **Test 2: Authorized Phone Without Password**
 ```
-Send from: +85290511427
+Send from: +852YYYYYYYY
 Message: "Show me today's appointments"
 Expected: "Sorry, Mr Hung is not available..." (no password provided)
 ```
 
 **Test 3: Authorized Phone With Password**
 ```
-Send from: +85290511427
-Message: "AI((99mlMeta - What appointments do we have today?"
+Send from: 'Boss number'
+Message: "PASSWORD - What appointments do we have today?"
 Expected: Detailed AI response with appointment information
 ```
 
@@ -633,16 +633,16 @@ curl http://localhost:8002/send \
 1. Verify phone number format in `.env`:
    ```bash
    # Correct
-   BOSS_PHONE_NUMBER=+85290511427
+   BOSS_PHONE_NUMBER=
 
    # Wrong
-   BOSS_PHONE_NUMBER=85290511427  # Missing +
-   BOSS_PHONE_NUMBER=+852 905 114 27  # Has spaces
+   BOSS_PHONE_NUMBER=  # Missing +
+   BOSS_PHONE_NUMBER=  # Has spaces
    ```
 
 2. Verify password is in message:
    ```
-   ✓ "AI((99mlMeta - What's my schedule?"
+   ✓ "PASSWORD - What's my schedule?"
    ✗ "What's my schedule?"  # No password
    ```
 
@@ -843,7 +843,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Bidirectional communication now fully functional
 
 - 🔒 **Implemented password-based authorization system**
-  - Requires both phone number (+852 90511427) and password (AI((99mlMeta)
+  - Requires both phone number (Boss Number) and password (PASSWORD)
   - LLM-based authorization check in system prompt
   - Generic response for unauthorized requests
 
