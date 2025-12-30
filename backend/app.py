@@ -16,7 +16,7 @@ import sqlalchemy
 # Add current directory to Python path for local imports
 sys.path.insert(0, str(current_dir))
 
-from routers import whatsapp, appointments, llm, files, conversations
+from routers import whatsapp, appointments, llm, files, conversations, admin
 from routers import settings as settings_router
 from websocket.manager import ConnectionManager
 from services.whatsapp_service import WhatsAppService
@@ -131,6 +131,7 @@ app.include_router(llm.router, prefix="/api", tags=["llm"])
 app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(settings_router.router, tags=["settings"])
 app.include_router(conversations.router, tags=["conversations"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 # Static files
 static_path = current_dir / "static"
