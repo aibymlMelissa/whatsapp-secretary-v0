@@ -206,11 +206,18 @@ class LLMService:
         max_tokens: int = 500,
         temperature: float = 0.7
     ) -> Optional[str]:
-        """Generate response using Ollama (Llama 4)"""
+        """Generate response using Ollama (Local or Cloud)"""
         try:
+            from core.config import settings
+            import os
+
+            # Check if using Ollama Cloud
+            ollama_api_key = os.getenv('OLLAMA_API_KEY')
+            use_cloud = bool(ollama_api_key)
+
             # Prepare conversation context
             conversation_history = self.get_conversation_context(chat_id)
-            
+
             # Build prompt with context
             system_prompt = self.get_system_prompt(context)
 
@@ -218,41 +225,57 @@ class LLMService:
             messages.extend(conversation_history)
             messages.append({"role": "user", "content": message})
 
-            # Use user-specific settings
-            ollama_url = user_config.get('ollama_base_url', self.ollama_base_url) if user_config else self.ollama_base_url
-            ollama_model = user_config.get('ollama_model', self.ollama_model) if user_config else self.ollama_model
+            # Use user-specific settings or cloud defaults
+            if use_cloud:
+                # Ollama Cloud
+                ollama_url = "https://api.ollama.com"
+                ollama_model = user_config.get('ollama_model', 'gpt-oss:120b-cloud') if user_config else 'gpt-oss:120b-cloud'
+                print(f"🌥️ Using Ollama Cloud with model: {ollama_model}")
+            else:
+                # Local Ollama
+                ollama_url = user_config.get('ollama_base_url', self.ollama_base_url) if user_config else self.ollama_base_url
+                ollama_model = user_config.get('ollama_model', self.ollama_model) if user_config else self.ollama_model
+                print(f"💻 Using Local Ollama with model: {ollama_model}")
 
             # Ollama API call
             async with httpx.AsyncClient() as client:
+                headers = {}
+                if use_cloud and ollama_api_key:
+                    headers['Authorization'] = f'Bearer {ollama_api_key}'
+
                 payload = {
                     "model": ollama_model,
                     "messages": messages,
                     "stream": False,
                     "options": {
                         "temperature": temperature,
-                        "max_tokens": max_tokens,
+                        "num_predict": max_tokens,
                         "top_p": 0.9
                     }
                 }
-                
+
                 response = await client.post(
                     f"{ollama_url}/api/chat",
                     json=payload,
-                    timeout=30.0
+                    headers=headers,
+                    timeout=60.0  # Cloud may take longer
                 )
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     ai_response = data.get("message", {}).get("content", "").strip()
-                    
+
                     if ai_response:
                         self.update_conversation_context(chat_id, message, ai_response)
                         return ai_response
-                
+
+                print(f"Ollama API returned status {response.status_code}: {response.text}")
                 return None
-                
+
         except Exception as e:
             print(f"Ollama API error: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     async def generate_gemini_response(
