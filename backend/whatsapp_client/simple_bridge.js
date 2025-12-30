@@ -120,14 +120,14 @@ class WhatsAppBridge {
                 this.qrTimeout = null;
             }
 
-            // Fetch and send chats to backend
+            // Fetch and send chats to backend (LIMITED to prevent overload)
             try {
                 console.log('📥 Fetching chats from WhatsApp...');
                 const chats = await this.client.getChats();
                 console.log(`✅ Found ${chats.length} chats`);
 
-                // Send chats info to backend
-                const chatsData = chats.slice(0, 50).map(chat => ({
+                // Send only top 20 chats to backend (reduced from 50)
+                const chatsData = chats.slice(0, 20).map(chat => ({
                     id: chat.id._serialized,
                     name: chat.name || chat.id.user || 'Unknown',
                     isGroup: chat.isGroup,
@@ -138,32 +138,10 @@ class WhatsAppBridge {
                 await this.sendCallback('chats_loaded', { chats: chatsData });
                 console.log(`📤 Sent ${chatsData.length} chats to backend`);
 
-                // Fetch recent message history for each chat
-                console.log('📥 Fetching message history for chats...');
-                for (const chat of chats.slice(0, 10)) {  // Limit to first 10 chats to avoid overload
-                    try {
-                        const messages = await chat.fetchMessages({ limit: 50 });
-                        console.log(`📥 Fetched ${messages.length} messages for chat ${chat.name}`);
-
-                        // Send each message to backend
-                        for (const msg of messages) {
-                            const messageData = {
-                                id: msg.id._serialized,
-                                chatId: msg.from || chat.id._serialized,
-                                body: msg.body || '',
-                                fromMe: msg.fromMe,
-                                timestamp: msg.timestamp,
-                                hasMedia: msg.hasMedia,
-                                type: msg.type
-                            };
-
-                            await this.sendCallback('new_message', messageData);
-                        }
-                    } catch (msgError) {
-                        console.error(`❌ Error fetching messages for chat ${chat.name}:`, msgError);
-                    }
-                }
-                console.log('✅ Message history fetch completed');
+                // SKIP message history fetch on initial connect to prevent overload
+                // Messages will be fetched on-demand when user opens a chat
+                console.log('⚠️  Skipping message history fetch to prevent overload');
+                console.log('ℹ️  Messages will load on-demand when chats are opened');
             } catch (error) {
                 console.error('❌ Error fetching chats:', error);
             }
