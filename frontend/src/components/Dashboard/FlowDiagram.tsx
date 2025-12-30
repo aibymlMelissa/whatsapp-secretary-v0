@@ -237,7 +237,9 @@ export const FlowDiagram: React.FC = () => {
           <text
             x={(from.x + to.x) / 2}
             y={midY}
-            className="text-xs fill-gray-600 dark:fill-gray-400"
+            fontSize="2"
+            fill="currentColor"
+            className="text-gray-600 dark:text-gray-400"
             textAnchor="middle"
           >
             {path.label}
