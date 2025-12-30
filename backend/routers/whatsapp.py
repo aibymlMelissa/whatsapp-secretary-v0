@@ -294,7 +294,7 @@ async def get_stats(db: Session = Depends(get_db)):
     """Get quick statistics for dashboard"""
     try:
         from datetime import datetime, timedelta
-        from database.models import Appointment
+        from database.models import Appointment, AppointmentStatus
 
         # Count active chats
         active_chats = db.query(Chat).filter(Chat.is_active == True).count()
@@ -307,7 +307,7 @@ async def get_stats(db: Session = Depends(get_db)):
         now = datetime.now()
         upcoming_appointments = db.query(Appointment).filter(
             Appointment.appointment_date >= now,
-            Appointment.status.in_(['scheduled', 'confirmed'])
+            Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED])
         ).count()
 
         # Count total files
