@@ -63,9 +63,14 @@ app = FastAPI(
 )
 
 # CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Build CORS origins list from environment variable or use defaults
+cors_origins_str = os.getenv("CORS_ORIGINS", "")
+if cors_origins_str:
+    # Parse comma-separated CORS origins from environment
+    cors_origins = [origin.strip() for origin in cors_origins_str.split(",")]
+else:
+    # Default origins for local development
+    cors_origins = [
         "http://localhost:3004",
         "http://127.0.0.1:3004",
         "http://localhost:3005",
@@ -74,9 +79,11 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://localhost:8004",
         "http://127.0.0.1:8004",
-        "https://curious-ferret-tight.ngrok-free.app",
-        "http://curious-ferret-tight.ngrok-free.app"
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
