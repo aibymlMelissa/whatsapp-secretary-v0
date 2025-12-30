@@ -64,5 +64,5 @@ EXPOSE 8001
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Start command
-CMD ["python3", "app.py"]
+# Start command - Use Railway's PORT environment variable
+CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8001}
