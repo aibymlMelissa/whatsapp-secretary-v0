@@ -439,7 +439,7 @@ class WhatsAppService:
                             phone_number=phone_number,
                             is_group=chat_data.get("isGroup", False),
                             is_active=True,
-                            ai_enabled=False,  # Default to disabled
+                            ai_enabled=True,  # Auto-enable AI for new chats
                             is_whitelisted=False
                         )
                         db.add(new_chat)
@@ -537,7 +537,8 @@ class WhatsAppService:
                         phone_number=phone_number,
                         name=f"Contact {phone_number[-4:]}",  # Use last 4 digits as default name
                         is_group=message_data.get("isGroup", False),
-                        is_active=True
+                        is_active=True,
+                        ai_enabled=True  # Auto-enable AI for new chats
                     )
                     db.add(chat)
                     db.flush()  # Get the chat ID
