@@ -246,9 +246,9 @@ The backend implements a sophisticated **agentic task system** where specialized
 
 **How It Works:**
 ```python
-# In message: "AI((99mlMeta - What appointments do we have today?"
+# In message: "PASSWORD - What appointments do we have today?"
 # ✓ Phone number matches: +852 XXXXXXXX
-# ✓ Password found in message: XXXXXXXXXXXX
+# ✓ Password found in message: PASSWORD
 # → FULL ACCESS GRANTED
 
 # Without password or wrong phone:
