@@ -315,6 +315,11 @@ class WhatsAppService:
             self.is_connected = True
             self.is_connecting = False
             print("✅ WhatsApp connected and ready")
+
+            # Fetch chats from WhatsApp to populate the database
+            print("📥 Fetching chats from WhatsApp...")
+            asyncio.create_task(self.fetch_chats_from_whatsapp())
+
             # Broadcast status update
             if self.connection_manager:
                 await self.connection_manager.broadcast({
@@ -363,6 +368,10 @@ class WhatsAppService:
                     }
                 })
 
+        elif event == "chats_loaded":
+            # Handle chats loaded from WhatsApp
+            await self.process_chats_loaded(data)
+
         elif event == "new_message":
             await self.process_new_message(data)
             # Broadcast new message with enhanced data
@@ -392,7 +401,67 @@ class WhatsAppService:
                         "timestamp": data.get("timestamp")
                     }
                 })
-    
+
+    async def process_chats_loaded(self, data: dict):
+        """Process chats loaded from WhatsApp and save to database"""
+        try:
+            chats = data.get("chats", [])
+            print(f"📥 Processing {len(chats)} chats from WhatsApp...")
+
+            from database.database import SessionLocal
+            from database.models import Chat
+
+            db = SessionLocal()
+            try:
+                saved_count = 0
+                for chat_data in chats:
+                    chat_id = chat_data.get("id")
+                    if not chat_id:
+                        continue
+
+                    # Check if chat already exists
+                    existing_chat = db.query(Chat).filter(Chat.id == chat_id).first()
+
+                    if existing_chat:
+                        # Update existing chat
+                        existing_chat.name = chat_data.get("name", "Unknown")
+                        existing_chat.is_group = chat_data.get("isGroup", False)
+                        existing_chat.updated_at = datetime.now()
+                    else:
+                        # Create new chat
+                        # Extract phone number from chat ID
+                        phone_number = chat_id.replace("@c.us", "").replace("@g.us", "")
+
+                        new_chat = Chat(
+                            id=chat_id,
+                            name=chat_data.get("name", "Unknown"),
+                            phone_number=phone_number,
+                            is_group=chat_data.get("isGroup", False),
+                            is_active=True,
+                            ai_enabled=False,  # Default to disabled
+                            is_whitelisted=False
+                        )
+                        db.add(new_chat)
+                        saved_count += 1
+
+                db.commit()
+                print(f"✅ Saved/updated {saved_count} new chats to database")
+
+                # Broadcast chats_updated event to connected clients
+                if self.connection_manager:
+                    await self.connection_manager.broadcast({
+                        "type": "chats_updated",
+                        "data": {"count": len(chats)}
+                    })
+
+            finally:
+                db.close()
+
+        except Exception as e:
+            print(f"❌ Error processing chats: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+
     async def process_new_message(self, message_data: dict):
         """Process new incoming message"""
         try:

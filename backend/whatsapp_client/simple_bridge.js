@@ -104,7 +104,7 @@ class WhatsAppBridge {
             }, 60000);
         });
 
-        this.client.on('ready', () => {
+        this.client.on('ready', async () => {
             console.log('✅ WhatsApp Client is ready!');
             this.status.connected = true;
             this.status.connecting = false;
@@ -116,6 +116,27 @@ class WhatsAppBridge {
             if (this.qrTimeout) {
                 clearTimeout(this.qrTimeout);
                 this.qrTimeout = null;
+            }
+
+            // Fetch and send chats to backend
+            try {
+                console.log('📥 Fetching chats from WhatsApp...');
+                const chats = await this.client.getChats();
+                console.log(`✅ Found ${chats.length} chats`);
+
+                // Send chats info to backend
+                const chatsData = chats.slice(0, 50).map(chat => ({
+                    id: chat.id._serialized,
+                    name: chat.name || chat.id.user || 'Unknown',
+                    isGroup: chat.isGroup,
+                    timestamp: chat.timestamp || Date.now(),
+                    unreadCount: chat.unreadCount || 0
+                }));
+
+                await this.sendCallback('chats_loaded', { chats: chatsData });
+                console.log(`📤 Sent ${chatsData.length} chats to backend`);
+            } catch (error) {
+                console.error('❌ Error fetching chats:', error);
             }
         });
 
