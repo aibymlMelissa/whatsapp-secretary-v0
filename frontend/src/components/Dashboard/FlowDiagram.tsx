@@ -165,12 +165,12 @@ export const FlowDiagram: React.FC = () => {
       'trusted': 'top-56 left-1/2 -translate-x-1/2',
       'non-trusted': 'top-56 right-12',
       'orchestrator': 'top-96 left-1/2 -translate-x-1/2',
-      'task-create': 'top-[26rem] left-1/2 -translate-x-1/2',
-      'routing': 'top-[34rem] left-1/2 -translate-x-1/2',
-      'appointment': 'top-[42rem] left-12',
-      'inquiry': 'top-[42rem] left-1/2 -translate-x-1/2',
-      'file': 'top-[42rem] right-12',
-      'response': 'top-[50rem] left-1/2 -translate-x-1/2'
+      'task-create': 'top-[30rem] left-1/2 -translate-x-1/2',
+      'routing': 'top-[38rem] left-1/2 -translate-x-1/2',
+      'appointment': 'top-[46rem] left-12',
+      'inquiry': 'top-[46rem] left-1/2 -translate-x-1/2',
+      'file': 'top-[46rem] right-12',
+      'response': 'top-[54rem] left-1/2 -translate-x-1/2'
     };
 
     return (
@@ -207,11 +207,11 @@ export const FlowDiagram: React.FC = () => {
       'trusted': { x: 50, y: 32 },
       'non-trusted': { x: 80, y: 32 },
       'orchestrator': { x: 50, y: 48 },
-      'task-create': { x: 50, y: 62 },
-      'routing': { x: 50, y: 76 },
-      'appointment': { x: 20, y: 88 },
-      'inquiry': { x: 50, y: 88 },
-      'file': { x: 80, y: 88 },
+      'task-create': { x: 50, y: 58 },
+      'routing': { x: 50, y: 71 },
+      'appointment': { x: 20, y: 86 },
+      'inquiry': { x: 50, y: 86 },
+      'file': { x: 80, y: 86 },
       'response': { x: 50, y: 100 }
     };
 
@@ -224,22 +224,36 @@ export const FlowDiagram: React.FC = () => {
     const midY = (from.y + to.y) / 2;
     const pathD = `M ${from.x} ${from.y} Q ${from.x} ${midY}, ${to.x} ${to.y}`;
 
+    // Extract color from className
+    const colorMap: Record<string, string> = {
+      'stroke-gray-400': '#9ca3af',
+      'stroke-green-500': '#22c55e',
+      'stroke-blue-500': '#3b82f6',
+      'stroke-orange-500': '#f97316',
+      'stroke-indigo-500': '#6366f1',
+      'stroke-cyan-500': '#06b6d4',
+      'stroke-pink-500': '#ec4899',
+      'stroke-teal-500': '#14b8a6',
+      'stroke-violet-500': '#8b5cf6'
+    };
+    const strokeColor = colorMap[path.color] || '#9ca3af';
+
     return (
-      <g key={`${path.from}-${path.to}`}>
+      <g key={`${path.from}-${path.to}`} stroke={strokeColor}>
         <path
           d={pathD}
           fill="none"
-          className={`${path.color} transition-all duration-300`}
-          strokeWidth="0.5"
+          className="transition-all duration-300"
+          strokeWidth="0.2"
           markerEnd="url(#arrowhead)"
         />
         {path.label && (
           <text
             x={(from.x + to.x) / 2}
             y={midY}
-            fontSize="2"
-            fill="currentColor"
-            className="text-gray-600 dark:text-gray-400"
+            fontSize="1.8"
+            fill="#6b7280"
+            className="dark:fill-gray-400"
             textAnchor="middle"
           >
             {path.label}
