@@ -36,6 +36,8 @@ class WhatsAppBridge {
         };
         this.qrTimeout = null;
         this.qrGenerationTime = null;
+        this.isRestarting = false;
+        this.restartTimeout = null;
         this.updateStatus();
     }
 
@@ -192,11 +194,12 @@ class WhatsAppBridge {
             this.sendCallback('disconnected', { reason });
 
             // Auto-restart on LOGOUT to get new QR code
-            if (reason === 'LOGOUT') {
-                console.log('🔄 Session logged out, restarting to generate new QR code...');
-                setTimeout(() => {
-                    this.restart();
-                }, 3000); // Wait 3 seconds before restarting
+            if (reason === 'LOGOUT' && !this.isRestarting && !this.restartTimeout) {
+                console.log('🔄 Session logged out, will restart in 5 seconds...');
+                this.restartTimeout = setTimeout(async () => {
+                    this.restartTimeout = null;
+                    await this.restart();
+                }, 5000); // Wait 5 seconds before restarting
             }
         });
 
@@ -234,45 +237,64 @@ class WhatsAppBridge {
     async restart() {
         console.log('🔄 Restarting WhatsApp client...');
 
-        // Clear timeout
-        if (this.qrTimeout) {
-            clearTimeout(this.qrTimeout);
-            this.qrTimeout = null;
+        // Prevent multiple simultaneous restarts
+        if (this.isRestarting) {
+            console.log('⚠️  Restart already in progress, skipping...');
+            return;
         }
+        this.isRestarting = true;
 
-        // Destroy existing client
-        if (this.client) {
-            try {
-                await this.client.destroy();
-                console.log('✅ Client destroyed');
-            } catch (error) {
-                console.error('❌ Error destroying client:', error);
-            }
-        }
-
-        // Clean up session files
         try {
-            const sessionPath = path.join(__dirname, 'whatsapp-session');
-            if (fs.existsSync(sessionPath)) {
-                fs.rmSync(sessionPath, { recursive: true, force: true });
-                console.log('✅ Session cleared');
+            // Clear timeouts
+            if (this.qrTimeout) {
+                clearTimeout(this.qrTimeout);
+                this.qrTimeout = null;
             }
-            if (fs.existsSync(QR_FILE)) {
-                fs.unlinkSync(QR_FILE);
+            if (this.restartTimeout) {
+                clearTimeout(this.restartTimeout);
+                this.restartTimeout = null;
             }
-            if (fs.existsSync(STATUS_FILE)) {
-                fs.unlinkSync(STATUS_FILE);
+
+            // Destroy existing client
+            if (this.client) {
+                try {
+                    // Remove all listeners to prevent multiple event handlers
+                    this.client.removeAllListeners();
+                    await this.client.destroy();
+                    console.log('✅ Client destroyed');
+                } catch (error) {
+                    console.error('❌ Error destroying client:', error);
+                }
+                this.client = null;
             }
-        } catch (error) {
-            console.error('❌ Error cleaning files:', error);
+
+            // Clean up session files
+            try {
+                const sessionPath = path.join(__dirname, 'whatsapp-session');
+                if (fs.existsSync(sessionPath)) {
+                    fs.rmSync(sessionPath, { recursive: true, force: true });
+                    console.log('✅ Session cleared');
+                }
+                if (fs.existsSync(QR_FILE)) {
+                    fs.unlinkSync(QR_FILE);
+                }
+                if (fs.existsSync(STATUS_FILE)) {
+                    fs.unlinkSync(STATUS_FILE);
+                }
+            } catch (error) {
+                console.error('❌ Error cleaning files:', error);
+            }
+
+            // Wait longer to ensure Chrome process fully exits
+            console.log('⏳ Waiting for Chrome to fully exit...');
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            // Reinitialize
+            console.log('🚀 Reinitializing...');
+            await this.initialize();
+        } finally {
+            this.isRestarting = false;
         }
-
-        // Wait a bit before reinitializing
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Reinitialize
-        console.log('🚀 Reinitializing...');
-        await this.initialize();
     }
 }
 
