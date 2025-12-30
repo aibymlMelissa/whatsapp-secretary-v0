@@ -310,4 +310,80 @@ class PendingAuthorization(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+# Agentic Task System
+class TaskType(enum.Enum):
+    APPOINTMENT_BOOKING = "appointment_booking"
+    APPOINTMENT_RESCHEDULE = "appointment_reschedule"
+    APPOINTMENT_CANCEL = "appointment_cancel"
+    INFORMATION_QUERY = "information_query"
+    FILE_PROCESSING = "file_processing"
+    AUTHORIZATION_REQUEST = "authorization_request"
+    REMINDER = "reminder"
+    GENERAL_INQUIRY = "general_inquiry"
+    TRIAGE = "triage"
+
+class TaskStatus(enum.Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    WAITING_INPUT = "waiting_input"
+    WAITING_APPROVAL = "waiting_approval"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+class TaskPriority(enum.Enum):
+    URGENT = 1
+    HIGH = 3
+    NORMAL = 5
+    LOW = 7
+    BACKGROUND = 9
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_type = Column(Enum(TaskType), nullable=False)
+    status = Column(Enum(TaskStatus), default=TaskStatus.PENDING)
+    priority = Column(Integer, default=5)  # 1-10, lower is higher priority
+
+    # Context
+    chat_id = Column(String, ForeignKey("chats.id"))
+    message_id = Column(String, ForeignKey("messages.id"))
+    assigned_agent = Column(String)  # Which agent is handling this task
+
+    # Task data (stored as JSON)
+    input_data = Column(Text)  # JSON: original message, context, parameters
+    output_data = Column(Text)  # JSON: results, responses, generated data
+    metadata = Column(Text)  # JSON: agent notes, steps completed, internal state
+    error_message = Column(Text)  # Error details if failed
+
+    # Workflow support for multi-step tasks
+    parent_task_id = Column(Integer, ForeignKey("tasks.id"))
+    step_number = Column(Integer, default=1)
+    total_steps = Column(Integer, default=1)
+
+    # Timing and scheduling
+    created_at = Column(DateTime, default=func.now())
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    deadline = Column(DateTime)
+    retry_count = Column(Integer, default=0)
+    max_retries = Column(Integer, default=3)
+
+    # Relationships
+    subtasks = relationship("Task", backref=backref("parent", remote_side=[id]))
+
+class AgentLog(Base):
+    """Log of agent actions for debugging and analytics"""
+    __tablename__ = "agent_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+    agent_name = Column(String, nullable=False)
+    action = Column(String, nullable=False)  # 'created', 'processed', 'delegated', 'completed', 'failed'
+    details = Column(Text)  # JSON: additional information
+    duration_ms = Column(Integer)  # How long the action took
+
+    created_at = Column(DateTime, default=func.now())
+
 
