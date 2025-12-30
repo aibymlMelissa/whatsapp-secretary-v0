@@ -15,7 +15,11 @@ import {
   Zap,
   Database,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Archive,
+  RefreshCw,
+  Trash2,
+  Tags
 } from 'lucide-react';
 
 interface FlowNode {
@@ -129,6 +133,14 @@ export const FlowDiagram: React.FC = () => {
       type: 'process'
     },
     {
+      id: 'conversation',
+      label: 'Conversation Manager',
+      description: 'Archive, sync, cleanup, and metadata',
+      icon: <Archive className="w-5 h-5" />,
+      color: 'bg-amber-500',
+      type: 'process'
+    },
+    {
       id: 'response',
       label: 'Send Response',
       description: 'Reply sent back via WhatsApp',
@@ -151,9 +163,11 @@ export const FlowDiagram: React.FC = () => {
     { from: 'routing', to: 'appointment', label: 'Booking Intent', color: 'stroke-pink-500' },
     { from: 'routing', to: 'inquiry', label: 'Info Query', color: 'stroke-teal-500' },
     { from: 'routing', to: 'file', label: 'File Upload', color: 'stroke-violet-500' },
+    { from: 'routing', to: 'conversation', label: 'Scheduled Task', color: 'stroke-amber-500' },
     { from: 'appointment', to: 'response', label: '', color: 'stroke-pink-500' },
     { from: 'inquiry', to: 'response', label: '', color: 'stroke-teal-500' },
-    { from: 'file', to: 'response', label: '', color: 'stroke-violet-500' }
+    { from: 'file', to: 'response', label: '', color: 'stroke-violet-500' },
+    { from: 'conversation', to: 'response', label: '', color: 'stroke-amber-500' }
   ];
 
   const renderNode = (node: FlowNode, index: number) => {
@@ -167,10 +181,11 @@ export const FlowDiagram: React.FC = () => {
       'orchestrator': 'top-96 left-1/2 -translate-x-1/2',
       'task-create': 'top-[32rem] left-1/2 -translate-x-1/2',
       'routing': 'top-[40rem] left-1/2 -translate-x-1/2',
-      'appointment': 'top-[48rem] left-12',
-      'inquiry': 'top-[48rem] left-1/2 -translate-x-1/2',
-      'file': 'top-[48rem] right-12',
-      'response': 'top-[56rem] left-1/2 -translate-x-1/2'
+      'appointment': 'top-[48rem] left-4',
+      'inquiry': 'top-[48rem] left-1/3 -translate-x-1/2',
+      'file': 'top-[48rem] right-1/3 translate-x-1/2',
+      'conversation': 'top-[48rem] right-4',
+      'response': 'top-[60rem] left-1/2 -translate-x-1/2'
     };
 
     return (
@@ -211,10 +226,11 @@ export const FlowDiagram: React.FC = () => {
       'orchestrator': { x: 50, y: 48 },
       'task-create': { x: 50, y: 60 },
       'routing': { x: 50, y: 73 },
-      'appointment': { x: 20, y: 87 },
-      'inquiry': { x: 50, y: 87 },
-      'file': { x: 80, y: 87 },
-      'response': { x: 50, y: 100 }
+      'appointment': { x: 15, y: 87 },
+      'inquiry': { x: 37, y: 87 },
+      'file': { x: 63, y: 87 },
+      'conversation': { x: 85, y: 87 },
+      'response': { x: 50, y: 105 }
     };
 
     const from = positions[path.from];
@@ -236,7 +252,8 @@ export const FlowDiagram: React.FC = () => {
       'stroke-cyan-500': '#06b6d4',
       'stroke-pink-500': '#ec4899',
       'stroke-teal-500': '#14b8a6',
-      'stroke-violet-500': '#8b5cf6'
+      'stroke-violet-500': '#8b5cf6',
+      'stroke-amber-500': '#f59e0b'
     };
     const strokeColor = colorMap[path.color] || '#9ca3af';
 
@@ -300,7 +317,7 @@ export const FlowDiagram: React.FC = () => {
       </div>
 
       {activeTab === 'overview' ? (
-        <div className="relative w-full" style={{ height: '56rem' }}>
+        <div className="relative w-full" style={{ height: '60rem' }}>
           {/* SVG for paths */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
@@ -535,6 +552,7 @@ export const FlowDiagram: React.FC = () => {
                       <li>📅 Appointment Agent</li>
                       <li>❓ Inquiry Agent</li>
                       <li>📄 File Processing Agent</li>
+                      <li>📦 Conversation Manager (NEW)</li>
                       <li>👋 Triage Agent</li>
                     </ul>
                   </div>
@@ -546,6 +564,85 @@ export const FlowDiagram: React.FC = () => {
                       <li>✓ Priority handling</li>
                       <li>✓ Full analytics</li>
                     </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Conversation Manager Card (NEW) */}
+          <Card className="p-6 border-l-4 border-amber-500">
+            <div className="flex items-start gap-4">
+              <div className="bg-amber-500 p-3 rounded-lg">
+                <Archive className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-amber-700 dark:text-amber-400 mb-2">
+                  ConversationManagerAgent (NEW in v2.1.0)
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Automated conversation lifecycle management with AI-powered metadata extraction.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <Archive className="w-4 h-4" />
+                      Auto-Archive:
+                    </h4>
+                    <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• Archive old conversations (90+ days)</li>
+                      <li>• Compress archived data</li>
+                      <li>• Free up database space</li>
+                      <li>• Scheduled daily at 3 AM</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4" />
+                      Message Sync:
+                    </h4>
+                    <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• Sync with WhatsApp</li>
+                      <li>• Incremental updates</li>
+                      <li>• Runs every 30 minutes</li>
+                      <li>• Error tracking & retry</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      Database Cleanup:
+                    </h4>
+                    <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• Remove old archives</li>
+                      <li>• Delete orphaned records</li>
+                      <li>• Optimize tables (VACUUM)</li>
+                      <li>• Scheduled daily at 2 AM</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    <Tags className="w-4 h-4" />
+                    AI-Powered Metadata:
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded">
+                      <div className="font-medium text-green-700 dark:text-green-400">Sentiment Analysis</div>
+                      <div className="mt-1">Positive, Negative, Neutral, Mixed</div>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                      <div className="font-medium text-blue-700 dark:text-blue-400">Categorization</div>
+                      <div className="mt-1">Appointment, Inquiry, Complaint, Feedback</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                      <div className="font-medium text-purple-700 dark:text-purple-400">Auto-Tagging</div>
+                      <div className="mt-1">Urgent, Follow-up, Price, etc.</div>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+                      <div className="font-medium text-amber-700 dark:text-amber-400">Scheduled Tasks</div>
+                      <div className="mt-1">Weekly metadata updates on Sunday</div>
+                    </div>
                   </div>
                 </div>
               </div>
