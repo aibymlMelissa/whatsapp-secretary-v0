@@ -3,9 +3,16 @@
 > An intelligent AI-powered WhatsApp assistant that manages conversations, schedules appointments, and provides secure two-factor authorization for sensitive operations.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node.js](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-18+-61DAFB.svg)](https://reactjs.org/)
+[![Deployed](https://img.shields.io/badge/deployed-vercel%20%2B%20railway-success.svg)](https://whatsapp-secretary-ai.vercel.app)
+
+## 🚀 Live Demo
+
+- **Frontend**: [https://whatsapp-secretary-ai.vercel.app](https://whatsapp-secretary-ai.vercel.app)
+- **Backend API**: [https://whatsapp-secretary-ai-production.up.railway.app](https://whatsapp-secretary-ai-production.up.railway.app)
+- **API Docs**: [https://whatsapp-secretary-ai-production.up.railway.app/docs](https://whatsapp-secretary-ai-production.up.railway.app/docs)
 
 ---
 
@@ -117,8 +124,8 @@ WhatsApp Secretary AI is a comprehensive business assistant that automates Whats
 | **State Management** | Zustand | Lightweight state management |
 | **Styling** | TailwindCSS + Shadcn/UI | Beautiful, responsive components |
 | **Build Tool** | Vite | Fast development and builds |
-| **Backend API** | FastAPI (Python 3.10+) | High-performance async framework |
-| **Database** | SQLite / PostgreSQL | Persistent data storage |
+| **Backend API** | FastAPI (Python 3.12+) | High-performance async framework |
+| **Database** | PostgreSQL (Railway) | Persistent cloud database |
 | **ORM** | SQLAlchemy | Database abstraction |
 | **WhatsApp Client** | whatsapp-web.js (Node.js) | WhatsApp Web integration |
 | **Bridge Server** | Express.js | HTTP server for message sending |
@@ -197,9 +204,10 @@ All interactions logged in database:
 
 ### Prerequisites
 
-- **Python 3.10+** - Backend runtime
+- **Python 3.12+** - Backend runtime
 - **Node.js 18+** - WhatsApp client runtime
-- **LLM Provider** - OpenAI API key or Google Gemini API key (or run Ollama locally)
+- **PostgreSQL** - Database (Railway provides this in production)
+- **LLM Provider** - OpenAI API key, Google Gemini API key, Ollama Cloud, or local Ollama
 
 ### Installation
 
