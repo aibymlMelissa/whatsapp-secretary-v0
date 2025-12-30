@@ -47,7 +47,7 @@ class Chat(Base):
     last_activity_at = Column(DateTime, default=func.now())
     message_count = Column(Integer, default=0)
     unread_count = Column(Integer, default=0)
-    metadata = Column(JSONB, default={})
+    extra_data = Column(JSONB, default={})
     auto_archive_after_days = Column(Integer, default=90)
 
     created_at = Column(DateTime, default=func.now())
@@ -76,7 +76,7 @@ class Message(Base):
     archive_reason = Column(String)
     processed = Column(Boolean, default=False)
     read_at = Column(DateTime)
-    metadata = Column(JSONB, default={})
+    extra_data = Column(JSONB, default={})
     last_synced_at = Column(DateTime)
     sentiment = Column(String)  # positive, neutral, negative, mixed
     category = Column(String)
@@ -384,7 +384,7 @@ class Task(Base):
     # Task data (stored as JSON)
     input_data = Column(Text)  # JSON: original message, context, parameters
     output_data = Column(Text)  # JSON: results, responses, generated data
-    metadata = Column(Text)  # JSON: agent notes, steps completed, internal state
+    extra_data = Column(Text)  # JSON: agent notes, steps completed, internal state
     error_message = Column(Text)  # Error details if failed
 
     # Workflow support for multi-step tasks
@@ -425,7 +425,7 @@ class MessageArchive(Base):
     original_message_id = Column(String, index=True)
     chat_id = Column(String, index=True, nullable=False)
     content = Column(Text)
-    metadata = Column(JSONB, default={})
+    extra_data = Column(JSONB, default={})
     archived_at = Column(DateTime, default=func.now(), index=True)
     archive_reason = Column(String)
     compressed = Column(Boolean, default=False)

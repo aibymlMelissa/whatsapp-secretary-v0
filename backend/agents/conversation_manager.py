@@ -180,7 +180,7 @@ class ConversationManagerAgent(BaseAgent):
 
             # Prepare content for archival
             content = message.body or ""
-            metadata = message.metadata or {}
+            metadata = message.extra_data or {}
 
             # Add additional metadata
             metadata.update({
@@ -458,10 +458,10 @@ class ConversationManagerAgent(BaseAgent):
                     entity.tags = tags
 
             # Update metadata fields
-            if hasattr(entity, 'metadata'):
-                current_metadata = entity.metadata or {}
+            if hasattr(entity, 'extra_data'):
+                current_metadata = entity.extra_data or {}
                 current_metadata.update(metadata_updates)
-                entity.metadata = current_metadata
+                entity.extra_data = current_metadata
 
             # Update direct fields if provided
             if 'sentiment' in metadata_updates and hasattr(entity, 'sentiment'):
