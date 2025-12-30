@@ -7,10 +7,11 @@ import { LLMStatus } from '@/components/LLM/LLMStatus';
 import { FileManager } from '@/components/Files/FileManager';
 import { QuickStats } from '@/components/Dashboard/QuickStats';
 import { QuickActions } from '@/components/Layout/QuickActions';
+import { FlowDiagram } from '@/components/Dashboard/FlowDiagram';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-type ModalView = 'appointments' | 'files' | null;
+type ModalView = 'appointments' | 'files' | 'flow' | null;
 
 const Dashboard: React.FC = () => {
   const [activeModal, setActiveModal] = useState<ModalView>(null);
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
             <LLMStatus />
             <QuickStats />
             <QuickActions
+              onFlowDiagramClick={() => setActiveModal('flow')}
               onAppointmentsClick={() => setActiveModal('appointments')}
               onFilesClick={() => setActiveModal('files')}
             />
@@ -67,6 +69,15 @@ const Dashboard: React.FC = () => {
             <DialogTitle>File Manager</DialogTitle>
           </DialogHeader>
           <FileManager />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={activeModal === 'flow'} onOpenChange={() => setActiveModal(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI WhatsApp Secretary - System Flow</DialogTitle>
+          </DialogHeader>
+          <FlowDiagram />
         </DialogContent>
       </Dialog>
     </div>

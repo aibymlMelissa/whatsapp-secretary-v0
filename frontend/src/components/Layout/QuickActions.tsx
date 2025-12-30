@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, FileText } from 'lucide-react';
+import { Calendar, FileText, Workflow } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -13,13 +13,21 @@ interface QuickAction {
 interface QuickActionsProps {
   onAppointmentsClick?: () => void;
   onFilesClick?: () => void;
+  onFlowDiagramClick?: () => void;
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
   onAppointmentsClick,
-  onFilesClick
+  onFilesClick,
+  onFlowDiagramClick
 }) => {
   const actions: QuickAction[] = [
+    {
+      icon: <Workflow className="h-4 w-4" />,
+      label: 'System Flow',
+      onClick: onFlowDiagramClick || (() => {}),
+      variant: 'default'
+    },
     {
       icon: <Calendar className="h-4 w-4" />,
       label: 'Appointments',
