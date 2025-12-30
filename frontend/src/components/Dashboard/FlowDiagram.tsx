@@ -160,17 +160,17 @@ export const FlowDiagram: React.FC = () => {
     const isHovered = hoveredNode === node.id;
     const positions = {
       'message': 'top-0 left-1/2 -translate-x-1/2',
-      'auth-check': 'top-28 left-1/2 -translate-x-1/2',
-      'boss': 'top-56 left-12',
-      'trusted': 'top-56 left-1/2 -translate-x-1/2',
-      'non-trusted': 'top-56 right-12',
+      'auth-check': 'top-32 left-1/2 -translate-x-1/2',
+      'boss': 'top-64 left-12',
+      'trusted': 'top-64 left-1/2 -translate-x-1/2',
+      'non-trusted': 'top-64 right-12',
       'orchestrator': 'top-96 left-1/2 -translate-x-1/2',
-      'task-create': 'top-[30rem] left-1/2 -translate-x-1/2',
-      'routing': 'top-[38rem] left-1/2 -translate-x-1/2',
-      'appointment': 'top-[46rem] left-12',
-      'inquiry': 'top-[46rem] left-1/2 -translate-x-1/2',
-      'file': 'top-[46rem] right-12',
-      'response': 'top-[54rem] left-1/2 -translate-x-1/2'
+      'task-create': 'top-[32rem] left-1/2 -translate-x-1/2',
+      'routing': 'top-[40rem] left-1/2 -translate-x-1/2',
+      'appointment': 'top-[48rem] left-12',
+      'inquiry': 'top-[48rem] left-1/2 -translate-x-1/2',
+      'file': 'top-[48rem] right-12',
+      'response': 'top-[56rem] left-1/2 -translate-x-1/2'
     };
 
     return (
@@ -189,7 +189,9 @@ export const FlowDiagram: React.FC = () => {
         >
           <div className="flex items-center gap-2 mb-1">
             {node.icon}
-            <span className="font-semibold text-sm">{node.label}</span>
+            <span className="font-bold text-sm tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              {node.label}
+            </span>
           </div>
           {isHovered && (
             <p className="text-xs mt-2 text-white/90">{node.description}</p>
@@ -201,17 +203,17 @@ export const FlowDiagram: React.FC = () => {
 
   const renderPath = (path: FlowPath) => {
     const positions: Record<string, { x: number; y: number }> = {
-      'message': { x: 50, y: 8 },
+      'message': { x: 50, y: 6 },
       'auth-check': { x: 50, y: 20 },
-      'boss': { x: 20, y: 32 },
-      'trusted': { x: 50, y: 32 },
-      'non-trusted': { x: 80, y: 32 },
+      'boss': { x: 20, y: 34 },
+      'trusted': { x: 50, y: 34 },
+      'non-trusted': { x: 80, y: 34 },
       'orchestrator': { x: 50, y: 48 },
-      'task-create': { x: 50, y: 58 },
-      'routing': { x: 50, y: 71 },
-      'appointment': { x: 20, y: 86 },
-      'inquiry': { x: 50, y: 86 },
-      'file': { x: 80, y: 86 },
+      'task-create': { x: 50, y: 60 },
+      'routing': { x: 50, y: 73 },
+      'appointment': { x: 20, y: 87 },
+      'inquiry': { x: 50, y: 87 },
+      'file': { x: 80, y: 87 },
       'response': { x: 50, y: 100 }
     };
 
@@ -314,20 +316,20 @@ export const FlowDiagram: React.FC = () => {
           {overviewNodes.map((node, index) => renderNode(node, index))}
 
           {/* Legend */}
-          <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h4 className="font-semibold mb-2 text-sm">User Types</h4>
+          <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-10">
+            <h4 className="font-bold mb-3 text-sm">User Types</h4>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span className="text-xs">Boss - Full Access</span>
+                <span className="text-xs font-medium">Boss - Full Access</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                <span className="text-xs">Trusted - AI Enabled</span>
+                <span className="text-xs font-medium">Trusted - AI Enabled</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                <span className="text-xs">Non-trusted - Auth Required</span>
+                <span className="text-xs font-medium">Non-trusted - Auth Required</span>
               </div>
             </div>
           </div>
