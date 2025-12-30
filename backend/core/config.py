@@ -13,10 +13,7 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_PATH: str = "data/whatsapp_secretary.db"
-    
-    @property
-    def DATABASE_URL(self) -> str:
-        return f"sqlite:///{self.DATABASE_PATH}"
+    DATABASE_URL: str = "sqlite:///data/whatsapp_secretary.db"  # Override via environment variable
     
     # WhatsApp
     WHATSAPP_SESSION_PATH: str = "data/whatsapp-session"
