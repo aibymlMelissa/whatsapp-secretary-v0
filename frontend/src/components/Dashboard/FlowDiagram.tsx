@@ -271,7 +271,7 @@ export const FlowDiagram: React.FC = () => {
               fontSize="2"
               fill="#1f2937"
               fontFamily="Arial, Helvetica, sans-serif"
-              fontWeight="500"
+              fontWeight="400"
               className="dark:fill-gray-200"
               textAnchor="middle"
             >
