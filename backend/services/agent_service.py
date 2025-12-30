@@ -13,6 +13,7 @@ from datetime import datetime
 from agents.base_agent import BaseAgent
 from agents.orchestrator import OrchestratorAgent
 from agents.conversation_manager import ConversationManagerAgent
+from agents.document_analyzer import DocumentAnalyzerAgent
 from database.models import Task, TaskType, TaskStatus
 from services.llm_service import LLMService
 
@@ -35,6 +36,7 @@ class AgentService:
         # Register specialized agents
         self.agents.append(OrchestratorAgent(self.llm_service))
         self.agents.append(ConversationManagerAgent(self.llm_service))
+        self.agents.append(DocumentAnalyzerAgent(self.llm_service))
 
         print(f"✅ Registered {len(self.agents)} agents:")
         for agent in self.agents:

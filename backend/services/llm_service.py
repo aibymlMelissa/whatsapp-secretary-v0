@@ -721,7 +721,129 @@ IMPORTANT: Security is the TOP priority. When in doubt, use the unauthorized mes
         
         response = await self.generate_response(prompt, "system", "gemini")
         return response.get("response", "Appointment confirmed!") if response else "Appointment confirmed!"
-    
+
+    def supports_vision(self) -> bool:
+        """
+        Check if the current LLM provider supports vision/image analysis
+
+        Returns:
+            bool: True if vision is supported, False otherwise
+        """
+        # Gemini supports vision
+        if self.gemini_client:
+            return True
+
+        # Check if Anthropic Claude is configured (supports vision)
+        if hasattr(settings, 'ANTHROPIC_API_KEY') and settings.ANTHROPIC_API_KEY:
+            return True
+
+        # Ollama and OpenAI base models don't support vision by default
+        return False
+
+    async def analyze_image(self, image_path: str, prompt: str) -> Dict[str, Any]:
+        """
+        Analyze an image using vision-capable LLM
+
+        Args:
+            image_path: Path to the image file
+            prompt: Analysis prompt/question about the image
+
+        Returns:
+            {
+                'content': str,  # Analysis result
+                'success': bool,
+                'error': Optional[str]
+            }
+        """
+        try:
+            import base64
+            from pathlib import Path
+
+            # Read and encode image
+            with open(image_path, 'rb') as f:
+                image_data = base64.b64encode(f.read()).decode('utf-8')
+
+            file_ext = Path(image_path).suffix.lower()
+            mime_type = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            }.get(file_ext, 'image/jpeg')
+
+            # Try Gemini first (has best vision support)
+            if self.gemini_client:
+                try:
+                    from PIL import Image
+                    img = Image.open(image_path)
+
+                    response = self.gemini_client.generate_content([prompt, img])
+
+                    return {
+                        'success': True,
+                        'content': response.text,
+                        'provider': 'gemini'
+                    }
+                except Exception as e:
+                    print(f"❌ Gemini vision error: {e}")
+
+            # Try Anthropic Claude (also has vision support)
+            if hasattr(settings, 'ANTHROPIC_API_KEY') and settings.ANTHROPIC_API_KEY:
+                try:
+                    import anthropic
+
+                    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+                    response = client.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=2000,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "image",
+                                        "source": {
+                                            "type": "base64",
+                                            "media_type": mime_type,
+                                            "data": image_data
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": prompt
+                                    }
+                                ]
+                            }
+                        ]
+                    )
+
+                    return {
+                        'success': True,
+                        'content': response.content[0].text,
+                        'provider': 'anthropic'
+                    }
+                except Exception as e:
+                    print(f"❌ Anthropic vision error: {e}")
+
+            return {
+                'success': False,
+                'content': '',
+                'error': 'No vision-capable LLM provider available. Please configure Gemini or Anthropic.'
+            }
+
+        except Exception as e:
+            print(f"❌ Image analysis error: {e}")
+            import traceback
+            traceback.print_exc()
+
+            return {
+                'success': False,
+                'content': '',
+                'error': str(e)
+            }
+
     async def cleanup(self):
         """Cleanup LLM service"""
         self.conversation_cache.clear()

@@ -352,6 +352,9 @@ class TaskType(enum.Enum):
     METADATA_UPDATE = "metadata_update"
     STATUS_UPDATE = "status_update"
 
+    # Document and Image Analysis
+    DOCUMENT_ANALYSIS = "document_analysis"
+
 class TaskStatus(enum.Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
