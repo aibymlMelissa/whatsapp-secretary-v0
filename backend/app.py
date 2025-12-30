@@ -11,6 +11,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+import sqlalchemy
 
 # Add current directory to Python path for local imports
 sys.path.insert(0, str(current_dir))
@@ -111,14 +112,36 @@ async def root():
 
 @app.get("/health")
 async def health_check():
+    """Comprehensive health check endpoint"""
     global whatsapp_service
-    whatsapp_status = None
+    from database.database import engine, Base
 
+    # Check database
+    db_status = {}
+    try:
+        with engine.connect() as conn:
+            conn.execute(sqlalchemy.text("SELECT 1"))
+        tables = list(Base.metadata.tables.keys())
+        db_status = {
+            "connected": True,
+            "type": "postgresql" if "postgresql" in str(engine.url) else "sqlite",
+            "tables_count": len(tables),
+            "sample_tables": tables[:5]
+        }
+    except Exception as e:
+        db_status = {
+            "connected": False,
+            "error": str(e)
+        }
+
+    # Check WhatsApp service
+    whatsapp_status = None
     if whatsapp_service:
         whatsapp_status = await whatsapp_service.get_status()
 
     return {
         "status": "healthy",
+        "database": db_status,
         "whatsapp": whatsapp_status,
         "services": {
             "whatsapp_service": whatsapp_service is not None,
