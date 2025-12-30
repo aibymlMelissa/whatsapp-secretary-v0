@@ -46,23 +46,15 @@ async def lifespan(app: FastAPI):
     # Run database migrations
     print("🔧 Running database migrations...")
     try:
-        import subprocess
-        result = subprocess.run(
-            [sys.executable, "migrations/002_add_all_missing_columns.py"],
-            cwd=str(current_dir),
-            capture_output=True,
-            text=True
-        )
-        if result.returncode == 0:
-            print("✅ Migrations completed successfully")
-            if result.stdout:
-                print(result.stdout)
-        else:
-            print(f"⚠️  Migration warnings/errors:")
-            if result.stderr:
-                print(result.stderr)
+        # Import and run migration directly
+        sys.path.insert(0, str(current_dir / "migrations"))
+        from migrations.run_all_migrations import run_all_migrations
+        await asyncio.to_thread(run_all_migrations)
+        print("✅ Migrations completed successfully")
     except Exception as e:
-        print(f"⚠️  Could not run migrations: {e}")
+        print(f"⚠️  Migration error (continuing anyway): {e}")
+        import traceback
+        traceback.print_exc()
 
     # Initialize services
     llm_service = LLMService()
