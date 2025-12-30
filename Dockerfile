@@ -54,8 +54,8 @@ COPY backend /app/backend
 WORKDIR /app/backend/whatsapp_client
 RUN npm install
 
-# Set working directory back to app root
-WORKDIR /app
+# Set working directory to backend for Python imports
+WORKDIR /app/backend
 
 # Expose port
 EXPOSE 8001
@@ -65,4 +65,4 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Start command
-CMD ["python3", "backend/app.py"]
+CMD ["python3", "app.py"]
