@@ -230,7 +230,7 @@ export const FlowDiagram: React.FC = () => {
           d={pathD}
           fill="none"
           className={`${path.color} transition-all duration-300`}
-          strokeWidth="2"
+          strokeWidth="0.5"
           markerEnd="url(#arrowhead)"
         />
         {path.label && (
@@ -282,13 +282,13 @@ export const FlowDiagram: React.FC = () => {
             <defs>
               <marker
                 id="arrowhead"
-                markerWidth="10"
-                markerHeight="10"
-                refX="9"
-                refY="3"
+                markerWidth="4"
+                markerHeight="4"
+                refX="3.5"
+                refY="1.5"
                 orient="auto"
               >
-                <polygon points="0 0, 10 3, 0 6" fill="currentColor" />
+                <polygon points="0 0, 4 1.5, 0 3" fill="currentColor" />
               </marker>
             </defs>
             {overviewPaths.map(renderPath)}
