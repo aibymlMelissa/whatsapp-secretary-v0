@@ -250,34 +250,24 @@ export const FlowDiagram: React.FC = () => {
           markerEnd="url(#arrowhead)"
         />
         {path.label && (
-          <g>
-            {/* Pill background for text readability */}
-            <rect
-              x={(from.x + to.x) / 2 - (path.label.length * 0.6 + 1)}
-              y={midY - 1.5}
-              width={path.label.length * 1.2 + 2}
-              height={2.8}
-              rx="1.4"
-              ry="1.4"
-              fill="white"
-              stroke="#d1d5db"
-              strokeWidth="0.15"
-              className="dark:fill-gray-800 dark:stroke-gray-600"
-            />
-            {/* Text on top of pill */}
-            <text
-              x={(from.x + to.x) / 2}
-              y={midY + 0.3}
-              fontSize="2"
-              fill="#1f2937"
-              fontFamily="Arial, Helvetica, sans-serif"
-              fontWeight="400"
-              className="dark:fill-gray-200"
-              textAnchor="middle"
-            >
-              {path.label}
-            </text>
-          </g>
+          <text
+            x={(from.x + to.x) / 2}
+            y={midY}
+            fontSize="2.5"
+            fill="#1f2937"
+            fontFamily="Arial, Helvetica, sans-serif"
+            fontWeight="400"
+            className="dark:fill-gray-200"
+            textAnchor="middle"
+            style={{
+              paintOrder: 'stroke fill',
+              stroke: 'white',
+              strokeWidth: '0.5',
+              strokeLinejoin: 'round'
+            }}
+          >
+            {path.label}
+          </text>
         )}
       </g>
     );
