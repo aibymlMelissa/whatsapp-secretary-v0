@@ -19,7 +19,8 @@ import {
   Archive,
   RefreshCw,
   Trash2,
-  Tags
+  Tags,
+  FileImage
 } from 'lucide-react';
 
 interface FlowNode {
@@ -103,7 +104,7 @@ export const FlowDiagram: React.FC = () => {
     {
       id: 'routing',
       label: 'Route to Agent',
-      description: 'Appointment, Inquiry, File, or Triage agent',
+      description: 'Appointment, Inquiry, File, Conversation, or Document agent',
       icon: <Zap className="w-5 h-5" />,
       color: 'bg-yellow-500',
       type: 'decision'
@@ -141,6 +142,14 @@ export const FlowDiagram: React.FC = () => {
       type: 'process'
     },
     {
+      id: 'document',
+      label: 'Document Analyzer',
+      description: 'Summarize PDFs/docs, explain images',
+      icon: <FileImage className="w-5 h-5" />,
+      color: 'bg-rose-500',
+      type: 'process'
+    },
+    {
       id: 'response',
       label: 'Send Response',
       description: 'Reply sent back via WhatsApp',
@@ -164,10 +173,12 @@ export const FlowDiagram: React.FC = () => {
     { from: 'routing', to: 'inquiry', label: 'Info Query', color: 'stroke-teal-500' },
     { from: 'routing', to: 'file', label: 'File Upload', color: 'stroke-violet-500' },
     { from: 'routing', to: 'conversation', label: 'Scheduled Task', color: 'stroke-amber-500' },
+    { from: 'routing', to: 'document', label: 'Doc/Image Analysis', color: 'stroke-rose-500' },
     { from: 'appointment', to: 'response', label: '', color: 'stroke-pink-500' },
     { from: 'inquiry', to: 'response', label: '', color: 'stroke-teal-500' },
     { from: 'file', to: 'response', label: '', color: 'stroke-violet-500' },
-    { from: 'conversation', to: 'response', label: '', color: 'stroke-amber-500' }
+    { from: 'conversation', to: 'response', label: '', color: 'stroke-amber-500' },
+    { from: 'document', to: 'response', label: '', color: 'stroke-rose-500' }
   ];
 
   const renderNode = (node: FlowNode, index: number) => {
@@ -181,10 +192,11 @@ export const FlowDiagram: React.FC = () => {
       'orchestrator': 'top-96 left-1/2 -translate-x-1/2',
       'task-create': 'top-[32rem] left-1/2 -translate-x-1/2',
       'routing': 'top-[40rem] left-1/2 -translate-x-1/2',
-      'appointment': 'top-[48rem] left-4',
-      'inquiry': 'top-[48rem] left-1/3 -translate-x-1/2',
-      'file': 'top-[48rem] right-1/3 translate-x-1/2',
-      'conversation': 'top-[48rem] right-4',
+      'appointment': 'top-[48rem] left-2',
+      'inquiry': 'top-[48rem] left-[22%]',
+      'file': 'top-[48rem] left-[44%]',
+      'conversation': 'top-[48rem] right-[22%]',
+      'document': 'top-[48rem] right-2',
       'response': 'top-[60rem] left-1/2 -translate-x-1/2'
     };
 
@@ -642,6 +654,69 @@ export const FlowDiagram: React.FC = () => {
                     <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
                       <div className="font-medium text-amber-700 dark:text-amber-400">Scheduled Tasks</div>
                       <div className="mt-1">Weekly metadata updates on Sunday</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Document Analyzer Card (NEW) */}
+          <Card className="p-6 border-l-4 border-rose-500">
+            <div className="flex items-start gap-4">
+              <div className="bg-rose-500 p-3 rounded-lg">
+                <FileImage className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-rose-700 dark:text-rose-400 mb-2">
+                  DocumentAnalyzerAgent (NEW in v2.2.0)
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  AI-powered document and image analysis exclusively for the Boss user.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Document Analysis:
+                    </h4>
+                    <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• PDF summarization & extraction</li>
+                      <li>• Word document analysis</li>
+                      <li>• Text file processing</li>
+                      <li>• Key points & action items</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <FileImage className="w-4 h-4" />
+                      Image Analysis:
+                    </h4>
+                    <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>• Image description & explanation</li>
+                      <li>• Text extraction from images (OCR)</li>
+                      <li>• Visual content analysis</li>
+                      <li>• Powered by Gemini/Claude Vision</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Boss-Only Authentication:
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="bg-rose-50 dark:bg-rose-900/20 p-2 rounded">
+                      <div className="font-medium text-rose-700 dark:text-rose-400">Phone Verification</div>
+                      <div className="mt-1">Only Boss number authorized</div>
+                    </div>
+                    <div className="bg-rose-50 dark:bg-rose-900/20 p-2 rounded">
+                      <div className="font-medium text-rose-700 dark:text-rose-400">Task Validation</div>
+                      <div className="mt-1">Orchestrator confirms intent</div>
+                    </div>
+                    <div className="bg-rose-50 dark:bg-rose-900/20 p-2 rounded">
+                      <div className="font-medium text-rose-700 dark:text-rose-400">Secure Processing</div>
+                      <div className="mt-1">Files handled privately</div>
                     </div>
                   </div>
                 </div>
