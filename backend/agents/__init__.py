@@ -9,8 +9,9 @@ the orchestrator.
 
 from agents.base_agent import BaseAgent
 from agents.orchestrator import OrchestratorAgent
+from agents.conversation_manager import ConversationManagerAgent
 
-__all__ = ['BaseAgent', 'OrchestratorAgent']
+__all__ = ['BaseAgent', 'OrchestratorAgent', 'ConversationManagerAgent']
 
 # Version info
 __version__ = '1.0.0'

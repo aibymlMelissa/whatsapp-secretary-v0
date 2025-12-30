@@ -16,23 +16,28 @@ import sqlalchemy
 # Add current directory to Python path for local imports
 sys.path.insert(0, str(current_dir))
 
-from routers import whatsapp, appointments, llm, files
+from routers import whatsapp, appointments, llm, files, conversations
 from routers import settings as settings_router
 from websocket.manager import ConnectionManager
 from services.whatsapp_service import WhatsAppService
 from services.llm_service import LLMService
+from services.agent_service import initialize_agent_service, get_agent_service
 from core.config import settings
 from database.database import engine, Base
+from tasks.scheduled_tasks import start_scheduled_tasks, stop_scheduled_tasks
+from tasks.task_manager import TaskManager
 
 # Global services
 whatsapp_service = None
 llm_service = None
+agent_service = None
+task_manager = TaskManager()
 connection_manager = ConnectionManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    global whatsapp_service, llm_service
+    global whatsapp_service, llm_service, agent_service
 
     # Create database tables using async method
     from database.database import init_db
@@ -43,17 +48,33 @@ async def lifespan(app: FastAPI):
     whatsapp_service = WhatsAppService(connection_manager)
     whatsapp_service.set_llm_service(llm_service)
 
+    # Initialize agent service
+    agent_service = initialize_agent_service(llm_service)
+
     # Inject services into routers
     whatsapp.whatsapp_service = whatsapp_service
     llm.llm_service = llm_service
+
+    # Start scheduled tasks
+    start_scheduled_tasks()
+
+    # Start agent service task processing in background
+    asyncio.create_task(agent_service.start_processing(task_manager))
 
     print("🚀 WhatsApp Secretary backend started")
 
     yield
 
     # Shutdown
+    if agent_service:
+        agent_service.stop_processing()
+
     if whatsapp_service:
         await whatsapp_service.cleanup()
+
+    # Stop scheduled tasks
+    stop_scheduled_tasks()
+
     print("🛑 WhatsApp Secretary backend stopped")
 
 app = FastAPI(
@@ -96,6 +117,7 @@ app.include_router(appointments.router, prefix="/api", tags=["appointments"])
 app.include_router(llm.router, prefix="/api", tags=["llm"])
 app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(settings_router.router, tags=["settings"])
+app.include_router(conversations.router, tags=["conversations"])
 
 # Static files
 static_path = current_dir / "static"

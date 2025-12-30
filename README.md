@@ -39,6 +39,8 @@ WhatsApp Secretary AI is a comprehensive business assistant that automates Whats
 
 - **Intelligent Responses**: AI-powered conversation handling with context awareness
 - **Appointment Management**: Automatic appointment booking, reminders, and scheduling
+- **Conversation Management**: Automated archiving, syncing, and database maintenance
+- **AI Metadata Analysis**: Sentiment analysis, categorization, and tag extraction
 - **Secure Authorization**: Two-factor authentication for sensitive operations (password + phone number)
 - **Real-time Sync**: WebSocket-based instant message updates across all clients
 - **Multi-LLM Support**: Works with OpenAI GPT-4, Google Gemini, Anthropic Claude, and Ollama
@@ -68,7 +70,16 @@ WhatsApp Secretary AI is a comprehensive business assistant that automates Whats
 - **Conflict Detection**: Prevents double-booking with intelligent scheduling
 - **Reminders**: Automated appointment reminders (configurable timing)
 
-### 4. Developer-Friendly
+### 4. Conversation Management (NEW in v2.1.0)
+
+- **Auto-Archive**: Automatically archive conversations older than 90 days with compression
+- **Message Sync**: Keep database in sync with WhatsApp messages
+- **Smart Cleanup**: Remove old data, optimize tables, free up space
+- **AI Metadata**: Sentiment analysis, category classification, automatic tagging
+- **Scheduled Tasks**: Automated daily/weekly maintenance with APScheduler
+- **REST API**: Full control over archiving, syncing, and metadata via API
+
+### 5. Developer-Friendly
 
 - **REST API**: Comprehensive FastAPI backend with auto-generated docs
 - **WebSocket Support**: Real-time bidirectional communication
@@ -102,6 +113,8 @@ WhatsApp Secretary AI is a comprehensive business assistant that automates Whats
 │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
 │  • WhatsApp Service: Message processing & authorization check   │
 │  • LLM Service: AI response generation (OpenAI/Gemini/Claude)   │
+│  • Agent Service: Task routing & ConversationManagerAgent       │
+│  • Scheduled Tasks: Auto-archive, sync, cleanup (APScheduler)   │
 │  • Database: SQLite/PostgreSQL for persistence                  │
 │  • WebSocket Manager: Real-time updates to frontend             │
 └─────────────────────────────────────────────────────────────────┘
@@ -116,6 +129,93 @@ WhatsApp Secretary AI is a comprehensive business assistant that automates Whats
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Multi-Agent Architecture
+
+The backend implements a sophisticated **agentic task system** where specialized agents handle different types of requests:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     INCOMING MESSAGE                         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  TASK MANAGER - Queue & Task Persistence                    │
+│  • Creates tasks in database (with priority, deadline)       │
+│  • Maintains task queue for processing                       │
+│  • Tracks task status: PENDING → IN_PROGRESS → COMPLETED    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  AGENT SERVICE - Intelligent Task Routing                   │
+│  • Analyzes task type and requirements                      │
+│  • Routes to appropriate specialized agent                   │
+│  • Handles agent execution and error recovery               │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+         ┌─────────────┼─────────────────────┐
+         │             │                     │
+         ▼             ▼                     ▼
+┌────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│ ORCHESTRATOR   │ │ CONVERSATION     │ │ FUTURE AGENTS    │
+│ AGENT          │ │ MANAGER AGENT    │ │ (Extensible)     │
+├────────────────┤ ├──────────────────┤ ├──────────────────┤
+│ • Message      │ │ • Auto-archive   │ │ • Appointment    │
+│   triage       │ │ • Message sync   │ │   booking        │
+│ • Intent       │ │ • DB cleanup     │ │ • File           │
+│   analysis     │ │ • Sentiment      │ │   processing     │
+│ • Route to     │ │   analysis       │ │ • Customer       │
+│   specialists  │ │ • Metadata mgmt  │ │   support        │
+└────────────────┘ └──────────────────┘ └──────────────────┘
+         │             │                     │
+         └─────────────┴─────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  TASK RESULT - Stored in Database                           │
+│  • Success/failure status                                   │
+│  • Output data (response, generated content)                │
+│  • Execution metrics (duration, errors)                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Benefits:**
+- **Separation of Concerns**: Each agent specializes in specific tasks
+- **Scalability**: Easy to add new agents for new capabilities
+- **Reliability**: Failed tasks can be retried with backoff
+- **Observability**: Complete audit trail of agent actions
+- **Parallel Processing**: Multiple agents can work simultaneously
+
+**Agent Types:**
+1. **OrchestratorAgent** (`backend/agents/orchestrator.py`)
+   - Analyzes incoming messages
+   - Determines intent (appointment, inquiry, complaint, etc.)
+   - Routes to appropriate specialized agent
+
+2. **ConversationManagerAgent** (`backend/agents/conversation_manager.py`)
+   - Handles conversation lifecycle
+   - Archives old conversations
+   - Syncs messages with WhatsApp
+   - Database maintenance & cleanup
+   - AI-powered metadata extraction
+
+3. **BaseAgent** (`backend/agents/base_agent.py`)
+   - Abstract base class for all agents
+   - Provides common functionality (logging, error handling, database access)
+   - Ensures consistent agent behavior
+
+**Task Flow Example:**
+```
+1. User sends: "I need an appointment tomorrow at 3pm"
+2. TaskManager creates: TRIAGE task → queue
+3. AgentService routes to: OrchestratorAgent
+4. Orchestrator analyzes: Intent = APPOINTMENT_BOOKING
+5. Creates subtask: APPOINTMENT_BOOKING → queue
+6. (Future) AppointmentAgent processes booking
+7. Result stored in database & sent to user
+```
+
 ### Technology Stack
 
 | Layer | Technology | Purpose |
@@ -127,6 +227,8 @@ WhatsApp Secretary AI is a comprehensive business assistant that automates Whats
 | **Backend API** | FastAPI (Python 3.12+) | High-performance async framework |
 | **Database** | PostgreSQL (Railway) | Persistent cloud database |
 | **ORM** | SQLAlchemy | Database abstraction |
+| **Task Scheduler** | APScheduler | Automated background tasks |
+| **Agent System** | Custom Multi-Agent | Task routing & specialized agents |
 | **WhatsApp Client** | whatsapp-web.js (Node.js) | WhatsApp Web integration |
 | **Bridge Server** | Express.js | HTTP server for message sending |
 | **LLM Providers** | OpenAI, Gemini, Claude, Ollama | AI response generation |
@@ -310,6 +412,18 @@ OLLAMA_MODEL=llama3.2
 # WhatsApp Client
 PYTHON_CALLBACK_URL=http://localhost:8001/api/whatsapp/callback
 WHATSAPP_BRIDGE_URL=http://localhost:8002
+
+# Conversation Manager (NEW in v2.1.0)
+ARCHIVE_ENABLED=true                      # Enable auto-archiving
+AUTO_ARCHIVE_AFTER_DAYS=90                # Archive conversations older than 90 days
+COMPRESS_ARCHIVES=true                    # Compress archived messages
+SYNC_ENABLED=true                         # Enable auto-sync with WhatsApp
+AUTO_SYNC_INTERVAL_MINUTES=30            # Sync every 30 minutes
+CLEANUP_ENABLED=true                      # Enable database cleanup
+CLEANUP_RUN_TIME=02:00                   # Daily cleanup time (HH:MM)
+AUTO_SENTIMENT_ANALYSIS=true             # Enable sentiment analysis
+AUTO_CATEGORIZATION=true                  # Enable message categorization
+AUTO_TAGGING=true                         # Enable automatic tagging
 ```
 
 **Frontend (.env.local)**
@@ -440,6 +554,23 @@ You'll receive a reminder 1 hour before. Is there anything else I can help you w
 | `POST` | `/api/whatsapp/chats/{chat_id}/toggle-ai` | Enable/disable AI |
 | `POST` | `/api/whatsapp/chats/{chat_id}/toggle-whitelist` | Whitelist toggle |
 
+### Conversation Management (NEW in v2.1.0)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/conversations/archive` | Archive specific conversations |
+| `POST` | `/api/conversations/unarchive` | Restore archived conversation |
+| `GET` | `/api/conversations/archives` | List archived conversations (paginated) |
+| `POST` | `/api/conversations/sync` | Trigger message synchronization |
+| `GET` | `/api/conversations/sync-status` | Get sync status for chats |
+| `POST` | `/api/conversations/cleanup` | Manual database cleanup |
+| `GET` | `/api/conversations/stats` | Database statistics |
+| `POST` | `/api/conversations/metadata` | Update message/chat metadata |
+| `POST` | `/api/conversations/messages/{id}/analyze` | Auto-analyze message |
+| `GET` | `/api/conversations/scheduled-tasks` | View scheduled tasks status |
+| `POST` | `/api/conversations/scheduled-tasks/{id}/trigger` | Manually trigger task |
+| `GET` | `/api/conversations/tasks/{id}` | Check task status |
+
 ### WebSocket Events
 
 | Event | Direction | Data | Description |
@@ -566,12 +697,21 @@ whatsapp-secretary-ai/
 │   ├── routers/
 │   │   ├── whatsapp.py                 # WhatsApp API endpoints
 │   │   ├── appointments.py             # Appointment management
+│   │   ├── conversations.py            # Conversation management API (NEW)
 │   │   └── llm.py                      # LLM endpoints
 │   ├── services/
 │   │   ├── whatsapp_service.py         # WhatsApp business logic
 │   │   ├── llm_service.py              # LLM integration & authorization
+│   │   ├── agent_service.py            # Agent routing & task processing (NEW)
 │   │   ├── authorization_service.py    # Legacy 2FA (not used in current version)
 │   │   └── user_service.py             # User management
+│   ├── agents/                          # Multi-Agent System (NEW)
+│   │   ├── base_agent.py               # Base agent class
+│   │   ├── orchestrator.py             # Main orchestrator agent
+│   │   └── conversation_manager.py     # Conversation management agent
+│   ├── tasks/                           # Task Management System (NEW)
+│   │   ├── task_manager.py             # Task queue & management
+│   │   └── scheduled_tasks.py          # APScheduler background tasks
 │   ├── whatsapp_client/
 │   │   ├── simple_bridge.js            # Node.js WhatsApp bridge with HTTP server
 │   │   ├── package.json                # Node.js dependencies
@@ -652,6 +792,48 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+### Version 2.1.0 (2025-12-30)
+
+**New Features:**
+- ✨ **ConversationManagerAgent System** - Automated conversation lifecycle management
+  - Auto-archive conversations older than 90 days with compression
+  - Message synchronization with WhatsApp (framework ready for full integration)
+  - Database cleanup: remove old archives, orphaned records, optimize tables
+  - AI-powered metadata: sentiment analysis, category classification, tag extraction
+
+- 🕐 **Scheduled Tasks with APScheduler**
+  - Auto-archive: Daily at 3 AM
+  - Auto-sync: Every 30 minutes
+  - Database cleanup: Daily at 2 AM
+  - Metadata updates: Weekly on Sunday at 4 AM
+
+- 🔧 **Multi-Agent Architecture**
+  - Agent service for task routing
+  - Orchestrator agent for message triage
+  - ConversationManager agent for lifecycle management
+  - Extensible framework for future specialized agents
+
+- 📊 **REST API for Conversation Management**
+  - 12 new endpoints for archiving, syncing, cleanup, metadata
+  - Database statistics and monitoring
+  - Manual task triggering
+  - Task status tracking
+
+- ⚙️ **Configuration**
+  - 20+ new environment variables for conversation management
+  - Customizable schedules, retention policies, compression settings
+  - LLM-powered metadata features (optional, requires LLM provider)
+
+**Files Added:**
+- `backend/agents/conversation_manager.py` - Main agent (680 lines)
+- `backend/tasks/scheduled_tasks.py` - Scheduled tasks (273 lines)
+- `backend/services/agent_service.py` - Agent routing (181 lines)
+- `backend/routers/conversations.py` - API endpoints (542 lines)
+- `IMPLEMENTATION_SUMMARY.md` - Complete documentation
+
+**Dependencies Added:**
+- `apscheduler>=3.10.4` - Task scheduling
+
 ### Version 2.0.0 (2025-12-29)
 
 **Major Changes:**
@@ -686,6 +868,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Last Updated:** December 29, 2025
+**Last Updated:** December 30, 2025
 **Repository:** [WhatsApp-Secretary-First-Trial](https://github.com/aibymlMelissa/WhatsApp-Secretary-First-Trial)
 **Maintained by:** AIbyML.com

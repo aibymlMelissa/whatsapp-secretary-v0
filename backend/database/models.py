@@ -1,5 +1,6 @@
 # backend/app/database/models.py
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Float, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Float, ForeignKey, Enum, ARRAY
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -39,6 +40,16 @@ class Chat(Base):
     is_active = Column(Boolean, default=True)
     ai_enabled = Column(Boolean, default=False)  # Enable AI auto-response for this chat
     is_whitelisted = Column(Boolean, default=False)  # Only whitelisted chats can receive AI responses
+
+    # Conversation Management
+    archived_at = Column(DateTime)
+    archive_reason = Column(String)
+    last_activity_at = Column(DateTime, default=func.now())
+    message_count = Column(Integer, default=0)
+    unread_count = Column(Integer, default=0)
+    metadata = Column(JSONB, default={})
+    auto_archive_after_days = Column(Integer, default=90)
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -48,7 +59,7 @@ class Chat(Base):
 
 class Message(Base):
     __tablename__ = "messages"
-    
+
     id = Column(String, primary_key=True)  # WhatsApp message ID
     chat_id = Column(String, ForeignKey("chats.id"), nullable=False)
     body = Column(Text)
@@ -59,8 +70,20 @@ class Message(Base):
     media_path = Column(String)  # Path to downloaded media
     llm_processed = Column(Boolean, default=False)
     llm_response = Column(Text)  # AI response if any
+
+    # Conversation Management
+    archived_at = Column(DateTime)
+    archive_reason = Column(String)
+    processed = Column(Boolean, default=False)
+    read_at = Column(DateTime)
+    metadata = Column(JSONB, default={})
+    last_synced_at = Column(DateTime)
+    sentiment = Column(String)  # positive, neutral, negative, mixed
+    category = Column(String)
+    tags = Column(ARRAY(String))
+
     created_at = Column(DateTime, default=func.now())
-    
+
     # Relationships
     chat = relationship("Chat", back_populates="messages")
 
@@ -322,6 +345,13 @@ class TaskType(enum.Enum):
     GENERAL_INQUIRY = "general_inquiry"
     TRIAGE = "triage"
 
+    # Conversation Management
+    CONVERSATION_ARCHIVE = "conversation_archive"
+    MESSAGE_SYNC = "message_sync"
+    DATABASE_CLEANUP = "database_cleanup"
+    METADATA_UPDATE = "metadata_update"
+    STATUS_UPDATE = "status_update"
+
 class TaskStatus(enum.Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
@@ -385,5 +415,37 @@ class AgentLog(Base):
     duration_ms = Column(Integer)  # How long the action took
 
     created_at = Column(DateTime, default=func.now())
+
+# Conversation Management Tables
+class MessageArchive(Base):
+    """Archive storage for old messages"""
+    __tablename__ = "message_archives"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    original_message_id = Column(String, index=True)
+    chat_id = Column(String, index=True, nullable=False)
+    content = Column(Text)
+    metadata = Column(JSONB, default={})
+    archived_at = Column(DateTime, default=func.now(), index=True)
+    archive_reason = Column(String)
+    compressed = Column(Boolean, default=False)
+    storage_path = Column(String)  # For external storage if needed
+
+    created_at = Column(DateTime, default=func.now())
+
+class SyncStatus(Base):
+    """Track synchronization status between WhatsApp and Database"""
+    __tablename__ = "sync_status"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    entity_type = Column(String, nullable=False, index=True)  # 'message', 'chat', 'contact'
+    entity_id = Column(String, nullable=False, index=True)
+    last_sync_at = Column(DateTime)
+    sync_status = Column(String, index=True)  # 'synced', 'pending', 'failed'
+    error_message = Column(Text)
+    retry_count = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
