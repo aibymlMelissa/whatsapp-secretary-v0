@@ -253,10 +253,10 @@ export const FlowDiagram: React.FC = () => {
           <text
             x={(from.x + to.x) / 2}
             y={midY}
-            fontSize="2.5"
-            fill="#4b5563"
+            fontSize="3"
+            fill="#374151"
             fontFamily="Arial, sans-serif"
-            fontWeight="350"
+            fontWeight="400"
             className="dark:fill-gray-300"
             textAnchor="middle"
           >
