@@ -40,8 +40,27 @@ __all__ = ['Base', 'get_db', 'init_db']
 
 async def init_db():
     """Initialize database tables"""
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created successfully")
+    try:
+        print(f"🔄 Initializing database...")
+        print(f"📍 Database URL: {str(engine.url).split('@')[0]}@***")  # Hide password
+
+        # Import all models to ensure they're registered
+        from database import models
+
+        # Create all tables (sync operation)
+        Base.metadata.create_all(bind=engine)
+
+        print(f"✅ Database tables created successfully!")
+        print(f"📊 Total tables: {len(Base.metadata.tables)}")
+        for table_name in list(Base.metadata.tables.keys())[:5]:  # Show first 5
+            print(f"   - {table_name}")
+        if len(Base.metadata.tables) > 5:
+            print(f"   ... and {len(Base.metadata.tables) - 5} more")
+    except Exception as e:
+        print(f"❌ Error initializing database: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 def get_db():
     """Dependency to get database session"""
