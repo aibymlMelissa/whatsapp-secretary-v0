@@ -46,38 +46,63 @@ async def disconnect_whatsapp(service: WhatsAppService = Depends(get_whatsapp_se
 
 @router.post("/reset-session")
 async def reset_session(service: WhatsAppService = Depends(get_whatsapp_service)):
-    """Reset WhatsApp session to generate new QR code"""
+    """Reset WhatsApp session - kills all processes and generates fresh QR code"""
     try:
         import shutil
+        import subprocess
+        import asyncio
         from pathlib import Path
         from core.config import settings
 
-        # Disconnect first
-        await service.disconnect()
+        print("🔄 Starting complete session reset...")
 
-        # Clear session files
+        # 1. Force kill all Node.js bridge processes
+        try:
+            print("🔪 Killing all Node.js bridge processes...")
+            subprocess.run(['pkill', '-f', 'simple_bridge.js'], check=False)
+            await asyncio.sleep(2)  # Wait for processes to die
+            print("✅ Node.js processes terminated")
+        except Exception as e:
+            print(f"⚠️  Error killing processes: {e}")
+
+        # 2. Disconnect service
+        try:
+            await service.disconnect()
+            print("✅ Service disconnected")
+        except Exception as e:
+            print(f"⚠️  Error disconnecting: {e}")
+
+        # 3. Clear session files
         session_path = Path(settings.WHATSAPP_SESSION_PATH)
         if session_path.exists():
-            shutil.rmtree(session_path)
+            shutil.rmtree(session_path, ignore_errors=True)
             print(f"✅ Session cleared: {session_path}")
 
-        # Clear status and QR files in whatsapp_client directory
+        # 4. Clear status and QR files
         qr_file = Path("backend/whatsapp_client/qr_code.txt")
         status_file = Path("backend/whatsapp_client/status.json")
         if qr_file.exists():
             qr_file.unlink()
         if status_file.exists():
             status_file.unlink()
+        print("✅ QR and status files cleared")
 
-        # Wait a moment then reconnect
-        import asyncio
-        await asyncio.sleep(1)
+        # 5. Wait for complete cleanup
+        print("⏳ Waiting for cleanup to complete...")
+        await asyncio.sleep(3)
 
-        # Reinitialize to get new QR code
+        # 6. Reinitialize with fresh state
+        print("🚀 Reinitializing WhatsApp service...")
         await service.initialize()
 
-        return {"success": True, "message": "Session reset. New QR code will be generated."}
+        return {
+            "success": True,
+            "message": "Session completely reset. All processes killed. Fresh QR code generated."
+        }
     except Exception as e:
+        import traceback
+        print(f"❌ Error during reset: {e}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/status")
