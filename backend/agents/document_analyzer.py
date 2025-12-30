@@ -31,7 +31,8 @@ class DocumentAnalyzerAgent(BaseAgent):
     """
 
     def __init__(self, llm_service: Optional[LLMService] = None):
-        super().__init__(agent_type="document_analyzer", llm_service=llm_service)
+        super().__init__("DocumentAnalyzer")
+        self.llm_service = llm_service
 
         # Supported file types
         self.supported_documents = {
@@ -51,6 +52,10 @@ class DocumentAnalyzerAgent(BaseAgent):
             'image/svg+xml': 'svg'
         }
 
+    @property
+    def agent_type(self) -> str:
+        return "document_analyzer"
+
     async def can_handle(self, task: Task) -> bool:
         """
         Determine if this agent can handle the task
@@ -59,9 +64,9 @@ class DocumentAnalyzerAgent(BaseAgent):
         """
         return task.task_type == TaskType.DOCUMENT_ANALYSIS
 
-    async def execute(self, task: Task) -> Dict[str, Any]:
+    async def process(self, task: Task) -> Dict[str, Any]:
         """
-        Execute document/image analysis task
+        Process document/image analysis task
 
         Task input_data should contain:
         - file_path: Path to the document/image file
@@ -71,24 +76,17 @@ class DocumentAnalyzerAgent(BaseAgent):
         - requester_name: Name of requester
         """
         try:
-            # Update task status
-            from database.database import get_db
-            db = next(get_db())
-            task.status = TaskStatus.IN_PROGRESS
-            task.started_at = datetime.now()
-            db.commit()
-
             # Parse input data
             input_data = self._parse_input_data(task.input_data)
 
             # Validate authorization
             auth_result = await self._validate_authorization(input_data)
             if not auth_result['authorized']:
-                return await self._complete_task(task, {
+                return {
                     'success': False,
                     'error': 'Unauthorized',
                     'response': auth_result['message']
-                })
+                }
 
             # Get file info
             file_path = input_data.get('file_path')
@@ -96,19 +94,19 @@ class DocumentAnalyzerAgent(BaseAgent):
             analysis_type = input_data.get('analysis_type', 'summary')
 
             if not file_path:
-                return await self._complete_task(task, {
+                return {
                     'success': False,
                     'error': 'No file provided',
                     'response': 'Please provide a document or image to analyze.'
-                })
+                }
 
             # Verify file exists
             if not os.path.exists(file_path):
-                return await self._complete_task(task, {
+                return {
                     'success': False,
                     'error': 'File not found',
                     'response': f'The file {file_path} was not found.'
-                })
+                }
 
             # Determine if it's a document or image
             if file_type in self.supported_documents:
@@ -116,24 +114,24 @@ class DocumentAnalyzerAgent(BaseAgent):
             elif file_type in self.supported_images:
                 result = await self._analyze_image(file_path, file_type, analysis_type)
             else:
-                return await self._complete_task(task, {
+                return {
                     'success': False,
                     'error': 'Unsupported file type',
                     'response': f'Sorry, I cannot analyze {file_type} files. Supported types: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, WEBP.'
-                })
+                }
 
-            return await self._complete_task(task, result)
+            return result
 
         except Exception as e:
             print(f"❌ Error in DocumentAnalyzerAgent: {e}")
             import traceback
             traceback.print_exc()
 
-            return await self._complete_task(task, {
+            return {
                 'success': False,
                 'error': str(e),
                 'response': f'An error occurred while analyzing the file: {str(e)}'
-            })
+            }
 
     async def _validate_authorization(self, input_data: Dict[str, Any]) -> Dict[str, bool]:
         """
@@ -384,24 +382,3 @@ Be thorough and professional."""
 
         except Exception as e:
             return f"[Error extracting text: {str(e)}]"
-
-    async def _complete_task(self, task: Task, result: Dict[str, Any]) -> Dict[str, Any]:
-        """Mark task as complete and store results"""
-        try:
-            from database.database import get_db
-            db = next(get_db())
-
-            task.status = TaskStatus.COMPLETED if result.get('success') else TaskStatus.FAILED
-            task.completed_at = datetime.now()
-            task.output_data = str(result)
-
-            if not result.get('success') and result.get('error'):
-                task.error_message = result['error']
-
-            db.commit()
-
-            return result
-
-        except Exception as e:
-            print(f"❌ Error completing task: {e}")
-            return result
