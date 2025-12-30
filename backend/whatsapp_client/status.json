@@ -1,6 +1,6 @@
 {
-  "connected": true,
-  "connecting": false,
-  "qr_code": "2@Yzf70CUK2tbBjiPviseiJf2/iE84VxhK+uP2Lni3a2Avbeg38PoyYUfJRvUO+8Rf2f8SVNN3HsS7F5Vmd00slEemeEDhSuxesYM=,VBYW9rfUtzptv/dMNrkUZA6cPlWy4nJSUwtGKKMuuzE=,IRBGiRu5RevkZ0gg/XChXmkNluAEwCslhdftuyhquy8=,TAFhQhaF+NZ5gTCsQaA/yPbu3ngUVViklonJcRljKnI=,1",
-  "ready": true
+  "connected": false,
+  "connecting": true,
+  "qr_code": "2@GitfDJSO2+F+AxxD7VmKdC3QwMMx+Dqcm0hzsuS/QOFr/vuqTbJ9KX0xC+g/avnTwVqn5go/SWF490TLdCL2MFyNI/7MeDlKU3s=,fUtegdHcZLfmRqsJIRuruEo4wqnwhUnb0+B5OyOTtEs=,UvYBP9yRizkkQi2tOoP7qdlcG4wVGYy/0C+eGfhVAW0=,g7VN51TbIjQV9cRaLHyIwRGn4XoqcZTR05lG/0SsYHw=,1",
+  "ready": false
 }

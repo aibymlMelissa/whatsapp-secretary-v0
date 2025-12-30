@@ -205,11 +205,23 @@ class WhatsAppService:
     
     async def send_message(self, chat_id: str, message: str, media_path: str = None) -> dict:
         """Send message via WhatsApp"""
-        return await self.send_command("send_message", {
-            "chatId": chat_id,
-            "message": message,
-            "mediaPath": media_path
-        })
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "http://127.0.0.1:8002/send",
+                    json={"chatId": chat_id, "message": message},
+                    timeout=10.0
+                )
+
+                if response.status_code == 200:
+                    print(f"✅ Message sent to {chat_id}: {message[:50]}...")
+                    return {"success": True, "data": response.json()}
+                else:
+                    print(f"❌ Failed to send message: {response.status_code}")
+                    return {"success": False, "error": response.text}
+        except Exception as e:
+            print(f"❌ Error sending message: {e}")
+            return {"success": False, "error": str(e)}
     
     async def get_chats(self) -> List[dict]:
         """Get all chats"""
@@ -597,10 +609,30 @@ class WhatsAppService:
         try:
             message_body = message_data.get("body", "").strip()
             chat_id = message_data["chatId"]
-            
+
             if not message_body:
                 return
-            
+
+            # Extract phone number from chat_id
+            sender_phone = chat_id.replace("@c.us", "") if "@c.us" in chat_id else chat_id
+
+            # Get chat info from database for additional context
+            from database.database import SessionLocal
+            db = SessionLocal()
+            try:
+                chat = db.query(Chat).filter(Chat.id == chat_id).first()
+                contact_name = chat.name if chat else None
+            finally:
+                db.close()
+
+            # Build context with phone number for authorization
+            context = {
+                "phone_number": sender_phone,
+                "customer_name": contact_name,
+                "business_hours": "Monday-Thursday, 9:00 AM - 3:00 PM",
+                "services": ["Consultation", "Meeting", "Service Call", "Checkup"]
+            }
+
             # Check if this looks like an appointment request
             appointment_keywords = [
                 "appointment", "book", "schedule", "reserve", "meeting",
@@ -688,13 +720,19 @@ Would you like me to show you available time slots for that day?"""
 
                         await self.send_message(chat_id, response)
                         return
-            
-            # Generate general response
-            llm_response = await self.llm_service.generate_response(message_body, chat_id)
-            
+
+            # Generate general response with authorization context
+            llm_response = await self.llm_service.generate_response(
+                message_body,
+                chat_id,
+                provider="auto",
+                context=context,
+                phone_number=sender_phone
+            )
+
             if llm_response and llm_response.get("response"):
                 await self.send_message(chat_id, llm_response["response"])
-                
+
         except Exception as e:
             print(f"Error processing message with LLM: {e}")
     

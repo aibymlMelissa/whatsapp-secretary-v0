@@ -16,10 +16,12 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const express = require('express');
 
 const QR_FILE = path.join(__dirname, 'qr_code.txt');
 const STATUS_FILE = path.join(__dirname, 'status.json');
 const CALLBACK_URL = 'http://127.0.0.1:8001/api/whatsapp/callback';
+const HTTP_PORT = 8002; // HTTP server for receiving send commands
 
 console.log('Starting WhatsApp client with file-based communication...');
 
@@ -220,6 +222,37 @@ class WhatsAppBridge {
 
 const bridge = new WhatsAppBridge();
 bridge.initialize();
+
+// HTTP server for receiving send message commands
+const app = express();
+app.use(express.json());
+
+app.post('/send', async (req, res) => {
+    try {
+        const { chatId, message } = req.body;
+
+        if (!chatId || !message) {
+            return res.status(400).json({ error: 'chatId and message are required' });
+        }
+
+        if (!bridge.client || !bridge.status.ready) {
+            return res.status(503).json({ error: 'WhatsApp client not ready' });
+        }
+
+        console.log(`📤 Sending message to ${chatId}: ${message.substring(0, 50)}...`);
+        await bridge.client.sendMessage(chatId, message);
+        console.log(`✅ Message sent successfully`);
+
+        res.json({ success: true, chatId, message });
+    } catch (error) {
+        console.error('❌ Error sending message:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.listen(HTTP_PORT, () => {
+    console.log(`✅ HTTP server listening on port ${HTTP_PORT} for send commands`);
+});
 
 // Keep the process alive
 process.on('SIGINT', () => {

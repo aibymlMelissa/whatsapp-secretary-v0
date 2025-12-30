@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     
     # Google Gemini
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.0-flash-exp"
     
     # OpenAI (optional fallback)
     OPENAI_API_KEY: Optional[str] = None
@@ -38,7 +38,13 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-this"
-    
+
+    # Authorization
+    BOSS_PHONE_NUMBER: Optional[str] = None
+    BOSS_CONTACT_NAME: Optional[str] = None
+    AUTHORIZATION_PASSWORD: Optional[str] = None
+    UNAUTHORIZED_MESSAGE: str = "Sorry, Mr Hung is not available at this moment, if you like leave any message or make an appointments, please let me know. We will arrange with you asap"
+
     # Business settings
     BUSINESS_NAME: str = "Your Business"
     BUSINESS_HOURS_START: str = "09:00"
@@ -46,7 +52,7 @@ class Settings(BaseSettings):
     DEFAULT_APPOINTMENT_DURATION: int = 60  # minutes
     
     model_config = {
-        "env_file": ".env",
+        "env_file": "../.env",  # .env file is in parent directory
         "case_sensitive": True,
         "extra": "ignore"
     }

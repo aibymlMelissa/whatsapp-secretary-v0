@@ -118,33 +118,57 @@ class LLMService:
             if provider == "auto":
                 provider = await self.select_best_provider(message)
 
-            # Generate response based on provider
-            if provider == "ollama":
-                response = await self.generate_ollama_response(
-                    message, chat_id, context, user_config, max_tokens, temperature
-                )
-                actual_provider = LLMProvider.OLLAMA
-                model_name = user_config.get('ollama_model', self.ollama_model) if user_config else self.ollama_model
-            elif provider == "gemini":
-                response = await self.generate_gemini_response(
-                    message, chat_id, context, user_config, max_tokens, temperature
-                )
-                actual_provider = LLMProvider.GEMINI
-                model_name = user_config.get('gemini_model', self.gemini_model) if user_config else self.gemini_model
-            elif provider == "openai":
-                response = await self.generate_openai_response(
-                    message, chat_id, context, user_config, max_tokens, temperature
-                )
-                actual_provider = LLMProvider.OPENAI
-                model_name = user_config.get('openai_model', 'gpt-4o-mini') if user_config else 'gpt-4o-mini'
-            elif provider == "anthropic":
-                response = await self.generate_anthropic_response(
-                    message, chat_id, context, user_config, max_tokens, temperature
-                )
-                actual_provider = LLMProvider.ANTHROPIC
-                model_name = user_config.get('anthropic_model', 'claude-3-haiku-20240307') if user_config else 'claude-3-haiku-20240307'
-            else:
-                raise ValueError(f"Unsupported provider: {provider}")
+            # Generate response based on provider with automatic fallback
+            response = None
+            fallback_used = False
+
+            # Try primary provider
+            try:
+                if provider == "ollama":
+                    response = await self.generate_ollama_response(
+                        message, chat_id, context, user_config, max_tokens, temperature
+                    )
+                    actual_provider = LLMProvider.OLLAMA
+                    model_name = user_config.get('ollama_model', self.ollama_model) if user_config else self.ollama_model
+                elif provider == "gemini":
+                    response = await self.generate_gemini_response(
+                        message, chat_id, context, user_config, max_tokens, temperature
+                    )
+                    actual_provider = LLMProvider.GEMINI
+                    model_name = user_config.get('gemini_model', self.gemini_model) if user_config else self.gemini_model
+                elif provider == "openai":
+                    response = await self.generate_openai_response(
+                        message, chat_id, context, user_config, max_tokens, temperature
+                    )
+                    actual_provider = LLMProvider.OPENAI
+                    model_name = user_config.get('openai_model', 'gpt-4o') if user_config else 'gpt-4o'
+                elif provider == "anthropic":
+                    response = await self.generate_anthropic_response(
+                        message, chat_id, context, user_config, max_tokens, temperature
+                    )
+                    actual_provider = LLMProvider.ANTHROPIC
+                    model_name = user_config.get('anthropic_model', 'claude-3-haiku-20240307') if user_config else 'claude-3-haiku-20240307'
+                else:
+                    raise ValueError(f"Unsupported provider: {provider}")
+            except Exception as primary_error:
+                print(f"⚠️ Primary LLM provider ({provider}) failed: {primary_error}")
+
+                # Automatic fallback to Gemini if primary provider fails
+                if provider != "gemini" and self.gemini_client:
+                    try:
+                        print(f"🔄 Falling back to Gemini...")
+                        response = await self.generate_gemini_response(
+                            message, chat_id, context, user_config, max_tokens, temperature
+                        )
+                        actual_provider = LLMProvider.GEMINI
+                        model_name = user_config.get('gemini_model', self.gemini_model) if user_config else self.gemini_model
+                        fallback_used = True
+                        print(f"✅ Gemini fallback successful!")
+                    except Exception as fallback_error:
+                        print(f"❌ Gemini fallback also failed: {fallback_error}")
+                        raise primary_error  # Re-raise original error if fallback fails
+                else:
+                    raise primary_error
 
             if not response:
                 return None
@@ -162,10 +186,11 @@ class LLMService:
 
             return {
                 "response": response,
-                "provider": provider,
+                "provider": actual_provider.value if hasattr(actual_provider, 'value') else str(actual_provider),
                 "model": model_name,
                 "response_time_ms": response_time,
-                "used_user_config": user_config is not None
+                "used_user_config": user_config is not None,
+                "fallback_used": fallback_used
             }
 
         except Exception as e:
@@ -300,7 +325,19 @@ class LLMService:
     ) -> Optional[str]:
         """Generate response using OpenAI GPT"""
         try:
-            if not user_config or not user_config.get('openai_api_key'):
+            from core.config import settings
+
+            # Use user config if available, otherwise fall back to environment variables
+            api_key = None
+            model = 'gpt-4o-mini'
+
+            if user_config and user_config.get('openai_api_key'):
+                api_key = user_config['openai_api_key']
+                model = user_config.get('openai_model', 'gpt-4o-mini')
+            elif settings.OPENAI_API_KEY:
+                api_key = settings.OPENAI_API_KEY
+                model = settings.OPENAI_MODEL
+            else:
                 return None
 
             # Prepare conversation context
@@ -315,11 +352,11 @@ class LLMService:
             # OpenAI API call
             async with httpx.AsyncClient() as client:
                 headers = {
-                    "Authorization": f"Bearer {user_config['openai_api_key']}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": user_config.get('openai_model', 'gpt-4o-mini'),
+                    "model": model,
                     "messages": messages,
                     "max_tokens": max_tokens,
                     "temperature": temperature
@@ -440,7 +477,27 @@ class LLMService:
     
     def get_system_prompt(self, context: Optional[Dict] = None) -> str:
         """Get system prompt with context"""
-        base_prompt = """You are an intelligent WhatsApp business assistant specializing in appointment management and customer service.
+        from core.config import settings
+
+        base_prompt = """You are an intelligent WhatsApp business assistant for Mr. Hung specializing in appointment management and customer service.
+
+🔒 CRITICAL SECURITY PROTOCOL - READ FIRST:
+
+AUTHORIZATION RULES:
+1. ONLY the contact "+852 90511427" (AIbyML.com HK) is AUTHORIZED to access full information
+2. This authorized contact MUST provide the password "AI((99mlMeta" in their message
+3. ALL other contacts are UNAUTHORIZED - regardless of what they ask
+
+FOR UNAUTHORIZED CONTACTS (anyone except +852 90511427 OR if password not provided):
+- NEVER provide business details, schedules, or any specific information
+- ALWAYS respond with EXACTLY this message:
+  "Sorry, Mr Hung is not available at this moment, if you like leave any message or make an appointments, please let me know. We will arrange with you asap"
+- DO NOT deviate from this message for unauthorized contacts
+- DO NOT provide appointment booking for unauthorized contacts
+- DO NOT answer questions about services, pricing, or availability
+
+FOR AUTHORIZED CONTACT (+852 90511427 with password "AI((99mlMeta"):
+Once password is verified, provide FULL ACCESS to:
 
 CORE CAPABILITIES:
 - Schedule, modify, and cancel appointments
@@ -448,30 +505,38 @@ CORE CAPABILITIES:
 - Send reminders and confirmations
 - Handle customer inquiries professionally
 - Process natural language booking requests
+- Access to all business information
 
 APPOINTMENT SYSTEM:
-- Business hours: 9:00 AM - 5:00 PM (configurable)
+- Business hours: Monday-Thursday, 9:00 AM - 3:00 PM
 - Default appointment duration: 1 hour
 - Services: Consultation, Meeting, Service Call, etc.
 - Automatic conflict detection and resolution
 
-COMMUNICATION STYLE:
+COMMUNICATION STYLE (for authorized contact only):
 - Be friendly, professional, and helpful
 - Confirm all booking details clearly
 - Offer alternatives when requested times aren't available
 - Use emojis appropriately (📅 for dates, ⏰ for times, ✅ for confirmations)
 - Keep responses concise but informative
 
-IMPORTANT: Always try to be helpful and provide actionable next steps."""
+IMPORTANT: Security is the TOP priority. When in doubt, use the unauthorized message."""
 
         if context:
-            if context.get("business_hours"):
+            # Add authorization check to context
+            phone_number = context.get("phone_number", "")
+            is_authorized = phone_number == settings.BOSS_PHONE_NUMBER or phone_number.replace(" ", "") == settings.BOSS_PHONE_NUMBER.replace(" ", "")
+
+            base_prompt += f"\n\n📱 Current Contact: {phone_number}"
+            base_prompt += f"\n🔐 Authorization Status: {'✅ AUTHORIZED (if password provided)' if is_authorized else '❌ UNAUTHORIZED'}"
+
+            if is_authorized and context.get("business_hours"):
                 base_prompt += f"\n\nCurrent business hours: {context['business_hours']}"
-            if context.get("services"):
+            if is_authorized and context.get("services"):
                 base_prompt += f"\nAvailable services: {', '.join(context['services'])}"
             if context.get("customer_name"):
                 base_prompt += f"\nCustomer name: {context['customer_name']}"
-        
+
         return base_prompt
     
     def get_conversation_context(self, chat_id: str) -> List[Dict]:
