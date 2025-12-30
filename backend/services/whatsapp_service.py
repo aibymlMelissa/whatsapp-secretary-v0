@@ -76,13 +76,24 @@ class WhatsAppService:
                     "data": {"connecting": True, "connected": False}
                 })
 
-            # Start Node.js bridge process
+            # Start Node.js bridge process with environment variables
+            # Use the same port as the API server for callbacks
+            api_port = os.getenv('PORT', os.getenv('API_PORT', '8001'))
+            callback_url = f"http://localhost:{api_port}/api/whatsapp/callback"
+
+            # Pass environment variables to the Node.js process
+            env = os.environ.copy()
+            env['PYTHON_CALLBACK_URL'] = callback_url
+
+            print(f"🔗 Setting callback URL: {callback_url}")
+
             self.process = subprocess.Popen(
                 ['node', str(bridge_script)],
                 cwd=str(self.whatsapp_client_dir),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
+                env=env
             )
 
             print(f"✅ WhatsApp bridge process started with PID: {self.process.pid}")
