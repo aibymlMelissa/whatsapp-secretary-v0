@@ -241,7 +241,7 @@ The backend implements a sophisticated **agentic task system** where specialized
 ### 1. Password-Based Authorization System
 
 **Configuration:**
-- Authorized Phone Number: `+852 XXXXXXXX` (Boss Name)
+- Authorized Phone Number: `+852 XXXXXXXX` (Boss Number)
 - Required Password: `XXXXXXXXXXX` (configurable in `.env`)
 
 **How It Works:**
@@ -335,8 +335,8 @@ cp .env.example .env
 # Required settings in .env:
 OPENAI_API_KEY=sk-...                    # Your OpenAI API key
 GEMINI_API_KEY=your_gemini_key          # Or Google Gemini key
-BOSS_PHONE_NUMBER=+85290511427          # Authorized phone number
-AUTHORIZATION_PASSWORD=AI((99mlMeta     # Access password
+BOSS_PHONE_NUMBER=Boss Number          # Authorized phone number
+AUTHORIZATION_PASSWORD=PASSWORD     # Access password
 ```
 
 4. **WhatsApp Client Setup**
@@ -397,9 +397,9 @@ chmod +x start_dev.sh
 DATABASE_URL=sqlite:///./whatsapp_secretary.db
 
 # Authorization System
-BOSS_PHONE_NUMBER=+85290511427           # Authorized phone number
-BOSS_CONTACT_NAME=AIbyML.com HK          # Display name for authorized user
-AUTHORIZATION_PASSWORD=AI((99mlMeta      # Required password for full access
+BOSS_PHONE_NUMBER=Boss Number           # Authorized phone number
+BOSS_CONTACT_NAME=Boss Name          # Display name for authorized user
+AUTHORIZATION_PASSWORD=PASSWORD      # Required password for full access
 UNAUTHORIZED_MESSAGE=Sorry, Mr Hung is not available at this moment...
 
 # LLM Providers (choose one or more)
@@ -437,12 +437,12 @@ VITE_WS_URL=ws://localhost:8001
 The authorization system uses **both** phone number and password verification:
 
 1. **Authorized Phone Number**: Only this number gets full access
-   - Configure: `BOSS_PHONE_NUMBER=+85290511427` in `.env`
-   - Format: International format with + (e.g., +852 90511427)
+   - Configure: `BOSS_PHONE_NUMBER=` in `.env`
+   - Format: International format with + (e.g., +852 XXXXXXXX)
 
 2. **Required Password**: Must be included in message text
-   - Configure: `AUTHORIZATION_PASSWORD=AI((99mlMeta` in `.env`
-   - Usage: User types "AI((99mlMeta - [their question]"
+   - Configure: `AUTHORIZATION_PASSWORD=PASSWPRD` in `.env`
+   - Usage: User types "PASSWORD - [their question]"
    - Security: Without this password, even authorized number gets generic response
 
 3. **Unauthorized Message**: Response for non-authorized requests
@@ -463,8 +463,8 @@ The authorization system uses **both** phone number and password verification:
    Response: "Sorry, Mr Hung is not available..."
 
 ✅ AUTHORIZED (phone + password):
-   From: +852YYYYYYYY
-   Message: "XXXXXXXXXXXX - What appointments do we have today?"
+   From: Boss Number
+   Message: "PASSWORD - What appointments do we have today?"
    Response: [Full detailed response with appointment information]
 ```
 
