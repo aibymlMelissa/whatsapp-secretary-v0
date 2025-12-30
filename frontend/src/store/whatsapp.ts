@@ -15,6 +15,7 @@ interface WhatsAppStore {
   // Actions
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  resetSession: () => Promise<void>;
   fetchStatus: () => Promise<void>;
   fetchQrCode: () => Promise<void>;
   fetchChats: () => Promise<void>;
@@ -56,6 +57,21 @@ export const useWhatsAppStore = create<WhatsAppStore>((set, get) => ({
       set({ status: null, qrCode: null });
     } catch (error: any) {
       set({ error: error.message || 'Failed to disconnect WhatsApp' });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  resetSession: async () => {
+    try {
+      set({ loading: true, error: null, qrCode: null });
+      await whatsappApi.resetSession();
+      // Wait a moment for new QR code to be generated
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await get().fetchQrCode();
+      await get().fetchStatus();
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to reset session' });
     } finally {
       set({ loading: false });
     }

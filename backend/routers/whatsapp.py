@@ -44,6 +44,42 @@ async def disconnect_whatsapp(service: WhatsAppService = Depends(get_whatsapp_se
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/reset-session")
+async def reset_session(service: WhatsAppService = Depends(get_whatsapp_service)):
+    """Reset WhatsApp session to generate new QR code"""
+    try:
+        import shutil
+        from pathlib import Path
+        from core.config import settings
+
+        # Disconnect first
+        await service.disconnect()
+
+        # Clear session files
+        session_path = Path(settings.WHATSAPP_SESSION_PATH)
+        if session_path.exists():
+            shutil.rmtree(session_path)
+            print(f"✅ Session cleared: {session_path}")
+
+        # Clear status and QR files in whatsapp_client directory
+        qr_file = Path("backend/whatsapp_client/qr_code.txt")
+        status_file = Path("backend/whatsapp_client/status.json")
+        if qr_file.exists():
+            qr_file.unlink()
+        if status_file.exists():
+            status_file.unlink()
+
+        # Wait a moment then reconnect
+        import asyncio
+        await asyncio.sleep(1)
+
+        # Reinitialize to get new QR code
+        await service.initialize()
+
+        return {"success": True, "message": "Session reset. New QR code will be generated."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/status")
 async def get_whatsapp_status(service: WhatsAppService = Depends(get_whatsapp_service)):
     """Get WhatsApp connection status"""

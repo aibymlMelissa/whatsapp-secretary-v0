@@ -16,6 +16,7 @@ export const ConnectionStatus: React.FC = () => {
     error,
     connect,
     disconnect,
+    resetSession,
     fetchStatus,
     fetchQrCode,
   } = useWhatsAppStore();
@@ -149,7 +150,7 @@ export const ConnectionStatus: React.FC = () => {
             isOpen={authModalOpen || (Boolean(status?.connecting) && !Boolean(status?.connected))}
             onOpenChange={setAuthModalOpen}
             qrData={qrCode || undefined}
-            onRefreshQR={fetchQrCode}
+            onRefreshQR={resetSession}
           />
         </div>
       )}

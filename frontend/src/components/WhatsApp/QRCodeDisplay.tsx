@@ -63,7 +63,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             className="flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            Generate New QR
           </Button>
         )}
       </div>

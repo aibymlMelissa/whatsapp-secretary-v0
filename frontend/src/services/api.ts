@@ -39,6 +39,7 @@ api.interceptors.response.use(
 export const whatsappApi = {
   connect: () => api.post('/whatsapp/connect'),
   disconnect: () => api.post('/whatsapp/disconnect'),
+  resetSession: () => api.post('/whatsapp/reset-session'),
   getStatus: (): Promise<{ data: { success: boolean; status: WhatsAppStatus } }> =>
     api.get('/whatsapp/status'),
   getQrCode: () => api.get('/whatsapp/qr'),
