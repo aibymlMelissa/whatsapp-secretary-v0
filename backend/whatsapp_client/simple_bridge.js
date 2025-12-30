@@ -20,7 +20,7 @@ const express = require('express');
 
 const QR_FILE = path.join(__dirname, 'qr_code.txt');
 const STATUS_FILE = path.join(__dirname, 'status.json');
-const CALLBACK_URL = 'http://127.0.0.1:8001/api/whatsapp/callback';
+const CALLBACK_URL = process.env.PYTHON_CALLBACK_URL || 'http://127.0.0.1:8001/api/whatsapp/callback';
 const HTTP_PORT = 8002; // HTTP server for receiving send commands
 
 console.log('Starting WhatsApp client with file-based communication...');
