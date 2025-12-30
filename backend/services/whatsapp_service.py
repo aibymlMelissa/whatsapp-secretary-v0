@@ -44,6 +44,9 @@ class WhatsAppService:
         self.status_file = self.whatsapp_client_dir / "status.json"
         self.bridge_script = self.whatsapp_client_dir / "simple_bridge.js"
 
+        # WhatsApp bridge port (configurable via env var)
+        self.bridge_port = os.getenv('WHATSAPP_BRIDGE_PORT', os.getenv('BRIDGE_PORT', '8002'))
+
         # Ensure directories exist
         Path(self.session_path).mkdir(parents=True, exist_ok=True)
         Path(settings.MEDIA_DOWNLOAD_PATH).mkdir(parents=True, exist_ok=True)
@@ -79,14 +82,18 @@ class WhatsAppService:
             # Start Node.js bridge process with environment variables
             # Use the same port as the API server for callbacks
             api_port = os.getenv('PORT', os.getenv('API_PORT', '8001'))
+            # WhatsApp bridge port (separate from API port for local communication)
+            bridge_port = os.getenv('WHATSAPP_BRIDGE_PORT', os.getenv('BRIDGE_PORT', '8002'))
             # Use 127.0.0.1 instead of localhost to avoid IPv6 resolution issues
             callback_url = f"http://127.0.0.1:{api_port}/api/whatsapp/callback"
 
             # Pass environment variables to the Node.js process
             env = os.environ.copy()
             env['PYTHON_CALLBACK_URL'] = callback_url
+            env['WHATSAPP_BRIDGE_PORT'] = bridge_port
 
             print(f"🔗 Setting callback URL: {callback_url}")
+            print(f"🔗 WhatsApp bridge will listen on port: {bridge_port}")
 
             self.process = subprocess.Popen(
                 ['node', str(bridge_script)],
@@ -220,7 +227,7 @@ class WhatsAppService:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    "http://127.0.0.1:8002/send",
+                    f"http://127.0.0.1:{self.bridge_port}/send",
                     json={"chatId": chat_id, "message": message},
                     timeout=10.0
                 )
