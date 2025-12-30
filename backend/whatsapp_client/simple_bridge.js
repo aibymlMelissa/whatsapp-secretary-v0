@@ -184,12 +184,20 @@ class WhatsAppBridge {
             this.updateStatus();
         });
 
-        this.client.on('disconnected', (reason) => {
+        this.client.on('disconnected', async (reason) => {
             console.log('❌ WhatsApp disconnected:', reason);
             this.status.connected = false;
             this.status.connecting = false;
             this.updateStatus();
             this.sendCallback('disconnected', { reason });
+
+            // Auto-restart on LOGOUT to get new QR code
+            if (reason === 'LOGOUT') {
+                console.log('🔄 Session logged out, restarting to generate new QR code...');
+                setTimeout(() => {
+                    this.restart();
+                }, 3000); // Wait 3 seconds before restarting
+            }
         });
 
         // Handle incoming messages
@@ -300,6 +308,17 @@ app.post('/send', async (req, res) => {
 
 app.listen(HTTP_PORT, () => {
     console.log(`✅ HTTP server listening on port ${HTTP_PORT} for send commands`);
+});
+
+// Global error handlers to prevent crashes
+process.on('unhandledRejection', (error) => {
+    console.error('❌ Unhandled promise rejection:', error);
+    // Don't exit the process, just log the error
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught exception:', error);
+    // Don't exit the process, just log the error
 });
 
 // Keep the process alive
