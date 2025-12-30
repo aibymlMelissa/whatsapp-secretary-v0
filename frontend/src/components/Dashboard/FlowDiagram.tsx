@@ -255,11 +255,10 @@ export const FlowDiagram: React.FC = () => {
             y={midY}
             fontSize="3.5"
             fill="#4b5563"
-            fontFamily="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
-            fontWeight="700"
+            fontFamily="Arial, sans-serif"
+            fontWeight="500"
             className="dark:fill-gray-300"
             textAnchor="middle"
-            style={{ letterSpacing: '0.02em' }}
           >
             {path.label}
           </text>
