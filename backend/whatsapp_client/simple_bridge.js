@@ -20,8 +20,30 @@ const express = require('express');
 
 const QR_FILE = path.join(__dirname, 'qr_code.txt');
 const STATUS_FILE = path.join(__dirname, 'status.json');
+const LOCK_FILE = path.join(__dirname, 'bridge.lock');
 const CALLBACK_URL = process.env.PYTHON_CALLBACK_URL || 'http://127.0.0.1:8001/api/whatsapp/callback';
 const HTTP_PORT = parseInt(process.env.WHATSAPP_BRIDGE_PORT || process.env.BRIDGE_PORT || '8002'); // HTTP server for receiving send commands
+
+// Prevent multiple instances with lock file
+if (fs.existsSync(LOCK_FILE)) {
+    const lockContent = fs.readFileSync(LOCK_FILE, 'utf8');
+    const lockPid = parseInt(lockContent);
+
+    // Check if process is still running
+    try {
+        process.kill(lockPid, 0); // Signal 0 checks if process exists
+        console.error(`❌ Another bridge instance is already running (PID: ${lockPid}). Exiting.`);
+        process.exit(1);
+    } catch (e) {
+        // Process doesn't exist, remove stale lock
+        console.log('⚠️  Removing stale lock file');
+        fs.unlinkSync(LOCK_FILE);
+    }
+}
+
+// Create lock file with current PID
+fs.writeFileSync(LOCK_FILE, process.pid.toString());
+console.log(`✅ Lock acquired (PID: ${process.pid})`);
 
 console.log('Starting WhatsApp client with file-based communication...');
 
@@ -276,7 +298,17 @@ class WhatsAppBridge {
     }
 }
 
-const bridge = new WhatsAppBridge();
+// Singleton instance - ensure only ONE bridge exists
+let bridgeInstance = null;
+
+function getBridgeInstance() {
+    if (!bridgeInstance) {
+        bridgeInstance = new WhatsAppBridge();
+    }
+    return bridgeInstance;
+}
+
+const bridge = getBridgeInstance();
 bridge.initialize();
 
 // HTTP server for receiving send message commands
@@ -321,11 +353,37 @@ process.on('uncaughtException', (error) => {
     // Don't exit the process, just log the error
 });
 
+// Cleanup lock file on exit
+function cleanup() {
+    try {
+        if (fs.existsSync(LOCK_FILE)) {
+            fs.unlinkSync(LOCK_FILE);
+            console.log('✅ Lock file removed');
+        }
+    } catch (e) {
+        console.error('❌ Error removing lock file:', e);
+    }
+}
+
 // Keep the process alive
 process.on('SIGINT', () => {
     console.log('Shutting down WhatsApp bridge...');
     if (bridge.client) {
         bridge.client.destroy();
     }
+    cleanup();
     process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down...');
+    if (bridge.client) {
+        bridge.client.destroy();
+    }
+    cleanup();
+    process.exit(0);
+});
+
+process.on('exit', () => {
+    cleanup();
 });
