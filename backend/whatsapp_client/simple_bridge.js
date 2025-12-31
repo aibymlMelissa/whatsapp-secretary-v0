@@ -121,11 +121,13 @@ class WhatsAppBridge {
                 clearTimeout(this.qrTimeout);
             }
 
-            // Set 60-second timeout to restart if not scanned
-            this.qrTimeout = setTimeout(() => {
-                console.log('⏰ QR code not scanned within 60 seconds, restarting...');
-                this.restart();
-            }, 60000);
+            // REMOVED: Auto-restart on QR timeout - let QR stay valid indefinitely
+            // QR code will remain valid until:
+            // 1. User scans it successfully
+            // 2. User manually resets the session
+            // 3. WhatsApp Web expires it (usually 2 minutes, but we let WhatsApp handle it)
+            console.log('⏰ QR code will remain valid - no auto-restart timeout');
+            console.log('ℹ️  Scan anytime or manually reset if needed');
         });
 
         this.client.on('ready', async () => {
@@ -193,14 +195,14 @@ class WhatsAppBridge {
             this.updateStatus();
             this.sendCallback('disconnected', { reason });
 
-            // Auto-restart on LOGOUT to get new QR code
-            if (reason === 'LOGOUT' && !this.isRestarting && !this.restartTimeout) {
-                console.log('🔄 Session logged out, will restart in 5 seconds...');
-                this.restartTimeout = setTimeout(async () => {
-                    this.restartTimeout = null;
-                    await this.restart();
-                }, 5000); // Wait 5 seconds before restarting
-            }
+            // DISABLED: Auto-restart on LOGOUT
+            // Let the connection stay disconnected for manual intervention
+            // This prevents rapid QR regeneration loops that confuse the connection
+            console.log('⚠️  Connection lost - waiting for manual reset');
+            console.log('ℹ️  Call /api/whatsapp/reset-session to restart');
+
+            // Track disconnect time
+            this.lastDisconnectTime = Date.now();
         });
 
         // Handle incoming messages
