@@ -25,7 +25,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // Increased timeout for ngrok
+  timeout: 60000, // 60 seconds for general requests
 });
 
 api.interceptors.response.use(
