@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 import tempfile
 from pathlib import Path
+import httpx
 
 from core.config import settings
 from database.models import Chat, Message, MessageType
